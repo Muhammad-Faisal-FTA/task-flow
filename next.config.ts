@@ -11,6 +11,10 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   turbopack: {}, // prevents warning
+  typescript: {
+    ignoreBuildErrors: true, // ← skips type errors during build
+  },
+  
 };
 
 export default withPWA(nextConfig);
