@@ -1,0 +1,60 @@
+/* Custom CSS classes using global CSS variables */
+/* This file bridges the gap between globals.css variables and component styling */
+
+/* Background Colors */
+.bg-layer-0 { background-color: var(--color-bg-app); }
+.bg-layer-1 { background-color: var(--color-bg-header); }
+.bg-layer-2 { background-color: var(--color-bg-card); }
+
+/* Background status colors */
+.bg-status-overdue { background-color: var(--color-overdue); }
+.bg-status-soon { background-color: var(--color-warning); }
+.bg-status-today { background-color: var(--color-today); }
+.bg-status-nodate { background-color: var(--color-text-hint); }
+.bg-text-date { background-color: var(--color-text-secondary); }
+
+/* Text Colors */
+.text-text-primary { color: var(--color-text-primary); }
+.text-text-secondary { color: var(--color-text-secondary); }
+.text-text-hint { color: var(--color-text-hint); }
+.text-text-tag { color: var(--color-text-secondary); }
+.text-text-date { color: var(--color-text-secondary); }
+.text-text-placeholder { color: var(--color-text-hint); }
+.text-status-overdue { color: var(--color-overdue); }
+
+/* Border Colors */
+.border-layer-2 { border-color: var(--color-bg-header); }
+.border-layer-3 { border-color: var(--color-bg-card-hover); }
+.border-brand-accent { border-color: var(--color-accent); }
+.border-status-overdue { border-color: var(--color-overdue); }
+
+/* Brand Colors */
+.bg-brand { background-color: var(--color-primary); }
+.border-brand { border-color: var(--color-primary); }
+.text-brand-highlight { color: var(--color-accent); }
+
+/* Semantic Colors */
+.text-status-overdue { color: var(--color-overdue); }
+.text-status-soon { color: var(--color-warning); }
+.text-status-today { color: var(--color-today); }
+.text-status-nodate { color: var(--color-text-hint); }
+.text-status-repeat { color: var(--color-repeat); }
+
+/* Border Left Colors */
+.border-l-status-overdue { border-left-color: var(--color-overdue); }
+.border-l-status-soon { border-left-color: var(--color-warning); }
+.border-l-status-today { border-left-color: var(--color-today); }
+.border-l-status-nodate { border-left-color: var(--color-text-hint); }
+
+/* Radius Classes */
+.rounded-card { border-radius: var(--radius-card); }
+.rounded-badge { border-radius: var(--radius-input); }
+.rounded-pill { border-radius: var(--radius-btn); }
+
+/* Additional utility classes */
+.shadow-card {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Hover states */
+.bg-layer-2:hover { background-color: var(--color-bg-card-hover); }

@@ -1,65 +1,116 @@
-import Image from "next/image";
+"use client";
+import { useState } from "react";
+import { useAppState } from "@/hooks/useAppState";
+import { HomeScreen } from "@/components/task/HomeScreen";
+import { DetailScreen } from "@/components/task/DetailScreen";
+import { ListsScreen } from "@/components/task/ListsScreen";
+import { BottomNav } from "@/components/layout/BottomNav";
+import { QuickAddBar } from "@/components/task/QuickAddBar";
+import { Toast } from "@/components/ui/Toast";
+import { cn } from "@/lib/cn";
 
-export default function Home() {
+export default function Page() {
+  const state = useAppState();
+  const { screen, navigate, goBack, tasks, openNewTask, toast } = state;
+
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const hasOverdue = tasks.some((t) => t.status === "overdue" && !t.completed);
+
+  const handleAddNav = () => {
+    if (screen !== "home") {
+      navigate("home");
+    }
+    setQuickAddOpen((v) => !v);
+  };
+
+  const handleQuickAdd = (title: string) => {
+    state.saveTask({
+      id: "",
+      title,
+      listId: state.lists[0]?.id ?? "default",
+      completed: false,
+      dueDate: new Date().toISOString().split("T")[0],
+      dueTime: null,
+      repeat: "none",
+      status: "today",
+      hasRepeatIcon: false,
+    });
+    setQuickAddOpen(false);
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    /* Outer wrapper: centers the 430px phone shell on desktop */
+    <div className="flex justify-center min-h-screen bg-[#030d18]">
+      <div className="relative w-full max-w-[430px] min-h-screen bg-layer-0 overflow-hidden flex flex-col">
+        {/* Screen container */}
+        <div className="flex-1 overflow-hidden relative">
+          {/* HOME */}
+          <div
+            className={cn(
+              "absolute inset-0 transition-all duration-300 ease-in-out",
+              screen === "home"
+                ? "opacity-100 translate-x-0 pointer-events-auto"
+                : screen === "detail" || screen === "lists"
+                  ? "opacity-0 -translate-x-8 pointer-events-none"
+                  : "opacity-0 pointer-events-none",
+            )}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            <HomeScreen state={state} />
+          </div>
+
+          {/* DETAIL */}
+          <div
+            className={cn(
+              "absolute inset-0 transition-all duration-300 ease-in-out",
+              screen === "detail"
+                ? "opacity-100 translate-x-0 pointer-events-auto"
+                : "opacity-0 translate-x-8 pointer-events-none",
+            )}
           >
-            Documentation
-          </a>
+            <DetailScreen state={state} />
+          </div>
+
+          {/* LISTS */}
+          <div
+            className={cn(
+              "absolute inset-0 transition-all duration-300 ease-in-out",
+              screen === "lists"
+                ? "opacity-100 translate-x-0 pointer-events-auto"
+                : "opacity-0 translate-x-8 pointer-events-none",
+            )}
+          >
+            <ListsScreen state={state} />
+          </div>
         </div>
-      </main>
+
+        {/* Quick add bar */}
+        {quickAddOpen && screen === "home" && (
+          <QuickAddBar
+            onAdd={handleQuickAdd}
+            onClose={() => setQuickAddOpen(false)}
+          />
+        )}
+
+        {/* Bottom nav (hidden on detail) */}
+        {screen !== "detail" && (
+          <BottomNav
+            screen={screen}
+            hasOverdue={hasOverdue}
+            onHome={() => {
+              navigate("home");
+              setQuickAddOpen(false);
+            }}
+            onAdd={handleAddNav}
+            onLists={() => {
+              navigate("lists");
+              setQuickAddOpen(false);
+            }}
+          />
+        )}
+
+        {/* Toast */}
+        <Toast message={toast} />
+      </div>
     </div>
   );
 }

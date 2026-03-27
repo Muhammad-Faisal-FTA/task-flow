@@ -12,6 +12,10 @@ yarn dev
 pnpm dev
 # or
 bun dev
+# jest testing 
+npm run test
+# npm run cypress:open
+
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
