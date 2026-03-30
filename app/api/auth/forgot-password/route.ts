@@ -1,20 +1,16 @@
-// app/api/auth/login/route.ts
+// app/api/auth/forgot-password/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
 import { withRateLimit, RATE_LIMIT_PRESETS } from "@/middlewares/rateLimit";
-import { loginUser, resolveAuthError } from "@/services/authService";
-import { REFRESH_COOKIE_NAME, refreshCookieOptions } from "@/lib/jwt";
+import { forgotPassword, resolveAuthError } from "@/services/authService";
 import { z } from "zod";
 
 // ─── Validation schema ────────────────────────────────────────────────────────
-const LoginSchema = z.object({
+const ForgotPasswordSchema = z.object({
   email: z
     .string()
     .email("Please provide a valid email address")
     .toLowerCase(),
-  password: z
-    .string()
-    .min(1, "Password is required"),
 });
 
 // ─── Handler ──────────────────────────────────────────────────────────────────
@@ -30,7 +26,7 @@ const handler = async (req: NextRequest): Promise<NextResponse> => {
     }
 
     // 2. Validate
-    const parsed = LoginSchema.safeParse(body);
+    const parsed = ForgotPasswordSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
         {
@@ -41,29 +37,15 @@ const handler = async (req: NextRequest): Promise<NextResponse> => {
       );
     }
 
-    // 3. Login
-    const { user, tokens } = await loginUser(parsed.data);
+    // 3. Process — always returns same message (security: don't reveal email existence)
+    const result = await forgotPassword(parsed.data.email);
 
-    // 4. Set refresh token in httpOnly cookie
-    const response = NextResponse.json(
-      {
-        user,
-        accessToken: tokens.accessToken,
-      },
-      { status: 200 }
-    );
-
-    response.cookies.set(
-      REFRESH_COOKIE_NAME,
-      tokens.refreshToken,
-      refreshCookieOptions
-    );
-
-    return response;
+    return NextResponse.json(result, { status: 200 });
   } catch (err) {
     const { status, message } = resolveAuthError(err);
     return NextResponse.json({ error: message }, { status });
   }
 };
 
-export const POST = withRateLimit(RATE_LIMIT_PRESETS.auth, handler);
+// Very strict rate limit — 3 requests per hour (NFR Security)
+export const POST = withRateLimit(RATE_LIMIT_PRESETS.forgotPassword, handler);

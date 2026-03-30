@@ -33,4 +33,81 @@
   --radius-input:        8px;
   --radius-btn:          50px;
   --radius-fab:          50%;
+
+  /* ── Added tokens (do not duplicate above) ─────────────────────────────── */
+
+  /* Brand palette — full set from design system */
+  --color-brand-dark:      #0A2744;
+  --color-brand-mid:       #0D3A6B;
+  --color-brand-primary:   #1565A8;
+
+  /* Border */
+  --color-border-default:  rgba(21, 101, 168, 0.3);
+  --color-border-focus:    #1E8BC3;
+  --color-border-error:    #E53935;
+  --color-border-card:     rgba(21, 101, 168, 0.15);
+
+  /* Status aliases */
+  --color-completed:       #43A047;
+  --color-nodate:          #546E7A;
+
+  /* Text additions */
+  --color-text-faint:      #546E7A;
+  --color-text-accent:     #1E8BC3;
+  --color-text-error:      #E53935;
+
+  /* Shadows */
+  --shadow-card:           0 2px 12px rgba(0, 0, 0, 0.35);
+  --shadow-dialog:         0 24px 60px rgba(0, 0, 0, 0.4);
+  --shadow-fab:            0 4px 20px rgba(21, 101, 168, 0.5);
+  --shadow-input-focus:    0 0 0 3px rgba(30, 139, 195, 0.15);
+
+  /* Typography */
+  --font-family:           'Roboto', sans-serif;
+  --text-xs:               11px;
+  --text-sm:               12px;
+  --text-base:             14px;
+  --text-md:               15px;
+  --text-lg:               16px;
+  --text-xl:               18px;
+  --text-2xl:              22px;
+
+  /* Radius additions */
+  --radius-sm:             6px;
+  --radius-lg:             16px;
+  --radius-xl:             20px;
+
+  /* Spacing */
+  --space-page-x:          16px;
+  --space-page-y:          24px;
+}
+
+/* ─── Base reset ────────────────────────────────────────────────────────────── */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: var(--font-family);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: var(--color-bg-app);
+    color: var(--color-text-primary);
+    touch-action: manipulation;
+  }
+
+  body {
+    background-color: var(--color-bg-app);
+    min-height: 100vh;
+    min-height: 100dvh;
+    overscroll-behavior: none;
+  }
+
+  ::-webkit-scrollbar       { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-brand-primary);
+    border-radius: 4px;
+  }
 }

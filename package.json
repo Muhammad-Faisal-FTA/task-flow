@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
     "test": "jest",
@@ -13,6 +12,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "dotenv": "^17.3.1",
@@ -21,6 +21,7 @@
     "mongoose": "^9.3.2",
     "next": "16.2.1",
     "next-pwa": "^5.6.0",
+    "nodemailer": "^8.0.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "tailwind-merge": "^3.5.0"
@@ -31,6 +32,7 @@
     "@testing-library/react": "^16.3.2",
     "@types/jest": "^30.0.0",
     "@types/node": "^20",
+    "@types/nodemailer": "^7.0.11",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "cypress": "^15.13.0",
