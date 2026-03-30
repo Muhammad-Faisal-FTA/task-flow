@@ -1,4 +1,4 @@
-// app/(auth)/layout.tsx — uses your CSS classes
+// app/(auth)/layout.tsx — uses  CSS classes
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

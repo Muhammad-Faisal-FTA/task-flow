@@ -1,11 +1,7 @@
 @import "tailwindcss";
 @import "./custom-classes.css";
 
-<<<<<<< HEAD
 /* globals.css — TaskFlow Design Tokens */
-=======
-/* ─── TaskFlow Design Tokens ────────────────────────────────────────────────── */
->>>>>>> 2bd2ca9 ((feat: Auth): Acomplete authenti cation is implement.UI/Ux, registration, verification reset password and jwt.)
 :root {
   /* Brand */
   --color-bg-app:        #071A2E;
@@ -14,31 +10,6 @@
   --color-bg-card-hover: #1565A8;
   --color-primary:       #1E8BC3;
   --color-accent:        #29B6F6;
-<<<<<<< HEAD
-
-  /* Text */
-  --color-text-primary:  #FFFFFF;
-  --color-text-secondary:#B0C4DE;
-  --color-text-hint:     #6B8CAE;
-
-  /* Semantic */
-  --color-overdue:       #E53935;
-  --color-today:         #29B6F6;
-  --color-success:       #43A047;
-  --color-warning:       #F57C00;
-  --color-repeat:        #7B1FA2;
-
-  /* Dialogs */
-  --color-dialog-bg:     #FFFFFF;
-  --color-dialog-text:   #1A1A2E;
-  --color-dialog-btn:    #1565A8;
-
-  /* Radius */
-  --radius-card:         12px;
-  --radius-input:        8px;
-  --radius-btn:          50px;
-  --radius-fab:          50%;
-=======
 
   /* Text */
   --color-text-primary:  #FFFFFF;
@@ -139,5 +110,4 @@
     background: var(--color-brand-primary);
     border-radius: 4px;
   }
->>>>>>> 2bd2ca9 ((feat: Auth): Acomplete authenti cation is implement.UI/Ux, registration, verification reset password and jwt.)
 }
