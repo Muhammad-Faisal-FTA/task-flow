@@ -1,60 +1,234 @@
-/* Custom CSS classes using global CSS variables */
-/* This file bridges the gap between globals.css variables and component styling */
+/* custom-classes.css */
 
 /* Background Colors */
-.bg-layer-0 { background-color: var(--color-bg-app); }
-.bg-layer-1 { background-color: var(--color-bg-header); }
-.bg-layer-2 { background-color: var(--color-bg-card); }
+@utility bg-layer-0 { background-color: var(--color-bg-app); }
+@utility bg-layer-1 { background-color: var(--color-bg-header); }
+@utility bg-layer-2 { background-color: var(--color-bg-card); }
+@utility bg-layer-3 { background-color: var(--color-bg-card-hover); }
 
-/* Background status colors */
-.bg-status-overdue { background-color: var(--color-overdue); }
-.bg-status-soon { background-color: var(--color-warning); }
-.bg-status-today { background-color: var(--color-today); }
-.bg-status-nodate { background-color: var(--color-text-hint); }
-.bg-text-date { background-color: var(--color-text-secondary); }
+/* Background status */
+@utility bg-status-overdue { background-color: var(--color-overdue); }
+@utility bg-status-soon    { background-color: var(--color-warning); }
+@utility bg-status-today   { background-color: var(--color-today); }
+@utility bg-status-nodate  { background-color: var(--color-text-hint); }
+@utility bg-layer-error    { background-color: rgba(229, 57, 53, 0.1); }
+@utility bg-layer-success  { background-color: rgba(67, 160, 71, 0.1); }
+@utility bg-layer-info     { background-color: rgba(41, 182, 246, 0.1); }
+@utility bg-layer-warning  { background-color: rgba(245, 124, 0, 0.1); }
+
+/* Brand */
+@utility bg-brand         { background-color: var(--color-primary); }
+@utility border-brand     { border-color: var(--color-primary); }
 
 /* Text Colors */
-.text-text-primary { color: var(--color-text-primary); }
-.text-text-secondary { color: var(--color-text-secondary); }
-.text-text-hint { color: var(--color-text-hint); }
-.text-text-tag { color: var(--color-text-secondary); }
-.text-text-date { color: var(--color-text-secondary); }
-.text-text-placeholder { color: var(--color-text-hint); }
-.text-status-overdue { color: var(--color-overdue); }
+@utility text-text-primary     { color: var(--color-text-primary); }
+@utility text-text-secondary   { color: var(--color-text-secondary); }
+@utility text-text-hint        { color: var(--color-text-hint); }
+@utility text-text-tag         { color: var(--color-text-secondary); }
+@utility text-text-date        { color: var(--color-text-secondary); }
+@utility text-text-placeholder { color: var(--color-text-hint); }
+@utility text-text-faint       { color: var(--color-text-faint); }
+@utility text-text-accent      { color: var(--color-text-accent); }
+@utility text-text-error       { color: var(--color-text-error); }
+@utility text-brand-highlight  { color: var(--color-accent); }
+@utility text-brand-accent     { color: var(--color-primary); }
+
+/* Status text */
+@utility text-status-overdue   { color: var(--color-overdue); }
+@utility text-status-soon      { color: var(--color-warning); }
+@utility text-status-today     { color: var(--color-today); }
+@utility text-status-nodate    { color: var(--color-text-hint); }
+@utility text-status-repeat    { color: var(--color-repeat); }
+@utility text-status-completed { color: var(--color-completed); }
 
 /* Border Colors */
-.border-layer-2 { border-color: var(--color-bg-header); }
-.border-layer-3 { border-color: var(--color-bg-card-hover); }
-.border-brand-accent { border-color: var(--color-accent); }
-.border-status-overdue { border-color: var(--color-overdue); }
+@utility border-layer-2        { border-color: var(--color-bg-header); }
+@utility border-layer-3        { border-color: var(--color-bg-card-hover); }
+@utility border-brand-accent   { border-color: var(--color-accent); }
+@utility border-status-overdue { border-color: var(--color-overdue); }
+@utility border-default        { border-color: var(--color-border-default); }
+@utility border-focus          { border-color: var(--color-border-focus); }
+@utility border-error          { border-color: var(--color-border-error); }
+@utility border-success        { border-color: var(--color-completed); }
 
-/* Brand Colors */
-.bg-brand { background-color: var(--color-primary); }
-.border-brand { border-color: var(--color-primary); }
-.text-brand-highlight { color: var(--color-accent); }
+/* Border Left */
+@utility border-l-status-overdue   { border-left-color: var(--color-overdue); }
+@utility border-l-status-soon      { border-left-color: var(--color-warning); }
+@utility border-l-status-today     { border-left-color: var(--color-today); }
+@utility border-l-status-nodate    { border-left-color: var(--color-text-hint); }
+@utility border-l-brand-highlight  { border-left-color: var(--color-accent); }
+@utility border-l-status-completed { border-left-color: var(--color-completed); }
+@utility border-l-status-repeat    { border-left-color: var(--color-repeat); }
 
-/* Semantic Colors */
-.text-status-overdue { color: var(--color-overdue); }
-.text-status-soon { color: var(--color-warning); }
-.text-status-today { color: var(--color-today); }
-.text-status-nodate { color: var(--color-text-hint); }
-.text-status-repeat { color: var(--color-repeat); }
+/* Radius */
+@utility rounded-card  { border-radius: var(--radius-card); }
+@utility rounded-badge { border-radius: var(--radius-input); }
+@utility rounded-pill  { border-radius: var(--radius-btn); }
+@utility rounded-sm    { border-radius: var(--radius-sm); }
+@utility rounded-lg    { border-radius: var(--radius-lg); }
+@utility rounded-xl    { border-radius: var(--radius-xl); }
 
-/* Border Left Colors */
-.border-l-status-overdue { border-left-color: var(--color-overdue); }
-.border-l-status-soon { border-left-color: var(--color-warning); }
-.border-l-status-today { border-left-color: var(--color-today); }
-.border-l-status-nodate { border-left-color: var(--color-text-hint); }
+/* Shadows */
+@utility shadow-card        { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); }
+@utility shadow-card-custom { box-shadow: var(--shadow-card); }
+@utility shadow-dialog      { box-shadow: var(--shadow-dialog); }
+@utility shadow-fab         { box-shadow: var(--shadow-fab); }
 
-/* Radius Classes */
-.rounded-card { border-radius: var(--radius-card); }
-.rounded-badge { border-radius: var(--radius-input); }
-.rounded-pill { border-radius: var(--radius-btn); }
+/* Typography */
+@utility text-xs-token   { font-size: var(--text-xs); }
+@utility text-sm-token   { font-size: var(--text-sm); }
+@utility text-base-token { font-size: var(--text-base); }
+@utility text-md-token   { font-size: var(--text-md); }
+@utility text-lg-token   { font-size: var(--text-lg); }
+@utility text-xl-token   { font-size: var(--text-xl); }
+@utility text-2xl-token  { font-size: var(--text-2xl); }
 
-/* Additional utility classes */
-.shadow-card {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+/* Safe area */
+@utility pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+@utility pt-safe { padding-top:    env(safe-area-inset-top, 0px); }
+
+/* Scrollbar hide */
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar { display: none; }
 }
 
-/* Hover states */
-.bg-layer-2:hover { background-color: var(--color-bg-card-hover); }
+/* Section label */
+@utility section-label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--color-text-accent);
+}
+
+/* Auth input */
+@utility auth-input {
+  width: 100%;
+  border-radius: var(--radius-input);
+  padding: 12px 16px;
+  font-size: var(--text-base);
+  font-family: var(--font-family);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-card);
+  border: 1.5px solid var(--color-border-default);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  caret-color: var(--color-accent);
+  &::placeholder { color: var(--color-text-hint); }
+  &:focus {
+    border-color: var(--color-border-focus);
+    box-shadow: var(--shadow-input-focus);
+  }
+  &.error { border-color: var(--color-border-error); }
+}
+
+/* Auth card */
+@utility auth-card {
+  background-color: var(--color-bg-header);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border-default);
+  box-shadow: var(--shadow-dialog);
+  padding: 32px;
+}
+
+/* Buttons */
+@utility btn-primary {
+  width: 100%;
+  padding: 14px 24px;
+  border-radius: var(--radius-btn);
+  font-size: var(--text-md);
+  font-weight: 600;
+  font-family: var(--font-family);
+  color: var(--color-text-primary);
+  background-color: var(--color-brand-primary);
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  &:hover    { opacity: 0.9; }
+  &:active   { transform: scale(0.98); }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+@utility btn-ghost {
+  width: 100%;
+  padding: 14px 24px;
+  border-radius: var(--radius-btn);
+  font-size: var(--text-md);
+  font-weight: 600;
+  font-family: var(--font-family);
+  color: var(--color-accent);
+  background-color: transparent;
+  border: 1.5px solid var(--color-border-default);
+  cursor: pointer;
+  transition: border-color 0.2s ease, opacity 0.2s ease, transform 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  &:hover    { border-color: var(--color-accent); opacity: 0.9; }
+  &:active   { transform: scale(0.98); }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+/* Alert banners */
+@utility alert-success {
+  background-color: rgba(67, 160, 71, 0.1);
+  border: 1px solid var(--color-completed);
+  color: var(--color-completed);
+  border-radius: var(--radius-input);
+  padding: 12px 16px;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.5;
+}
+
+@utility alert-error {
+  background-color: rgba(229, 57, 53, 0.1);
+  border: 1px solid var(--color-overdue);
+  color: var(--color-overdue);
+  border-radius: var(--radius-input);
+  padding: 12px 16px;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.5;
+}
+
+@utility alert-info {
+  background-color: rgba(41, 182, 246, 0.1);
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent);
+  border-radius: var(--radius-input);
+  padding: 12px 16px;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.5;
+}
+
+/* Password strength bars */
+@utility strength-bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 4px;
+  background-color: var(--color-border-default);
+  transition: background-color 0.3s ease;
+}
+
+@utility active-weak   { background-color: var(--color-overdue); }
+@utility active-fair   { background-color: var(--color-warning); }
+@utility active-good   { background-color: var(--color-today); }
+@utility active-strong { background-color: var(--color-success); }
