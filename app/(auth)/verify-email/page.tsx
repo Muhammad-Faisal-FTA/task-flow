@@ -1,7 +1,7 @@
 // app/(auth)/verify-email/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Loader2, CheckCircle2, XCircle, MailOpen } from "lucide-react";
@@ -12,18 +12,19 @@ import { AuthButton } from "@/components/auth/AuthButton";
 // ─── States ───────────────────────────────────────────────────────────────────
 type VerifyState = "loading" | "success" | "expired" | "invalid" | "missing";
 
-export default function VerifyEmailPage() {
+// ─── Inner Component (uses useSearchParams) ──────────────────────────────────
+function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const { verifyEmail } = useAuth();
-  const [state, setState] = useState<VerifyState>("loading");
+  const token = searchParams.get("token");
+  const [state, setState] = useState<VerifyState>(
+    !token ? "missing" : "loading",
+  );
   const [message, setMessage] = useState<string>("");
 
   useEffect(() => {
-    const token = searchParams.get("token");
-
-    // No token in URL
-    if (!token) {
-      setState("missing");
+    // Skip effect if no token or already in missing state
+    if (!token || state === "missing") {
       return;
     }
 
@@ -47,7 +48,7 @@ export default function VerifyEmailPage() {
     }
 
     verify();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [token, verifyEmail]);
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (state === "loading") {
@@ -178,5 +179,22 @@ export default function VerifyEmailPage() {
         <AuthButton type="button">Back to Register</AuthButton>
       </Link>
     </>
+  );
+}
+
+// ─── Page (with Suspense boundary) ───────────────────────────────────────────
+export default function VerifyEmailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-12">
+          <div className="text-[14px]" style={{ color: "#B0C4DE" }}>
+            Loading...
+          </div>
+        </div>
+      }
+    >
+      <VerifyEmailContent />
+    </Suspense>
   );
 }

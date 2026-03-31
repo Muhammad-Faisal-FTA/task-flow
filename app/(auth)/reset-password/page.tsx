@@ -1,7 +1,7 @@
 // app/(auth)/reset-password/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -31,8 +31,8 @@ const ResetPasswordSchema = z
 
 type ResetPasswordFormData = z.infer<typeof ResetPasswordSchema>;
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-export default function ResetPasswordPage() {
+// ─── Inner Component (uses useSearchParams) ──────────────────────────────────
+function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const { resetPassword } = useAuth();
   const token = searchParams.get("token");
@@ -209,5 +209,22 @@ export default function ResetPasswordPage() {
         </Link>
       </p>
     </>
+  );
+}
+
+// ─── Page (with Suspense boundary) ───────────────────────────────────────────
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-12">
+          <div className="text-[14px]" style={{ color: "#B0C4DE" }}>
+            Loading...
+          </div>
+        </div>
+      }
+    >
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
