@@ -14,6 +14,7 @@ import {
   sendPasswordResetEmail,
 } from "@/lib/mailer";
 import type { AuthResponse, AuthTokens } from "@/types/auth";
+import { createDefaultList } from "@/services/taskService";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -120,6 +121,8 @@ export async function verifyEmail(
   user.isVerified        = true;
   user.emailVerifyToken  = null;
   await user.save();
+
+    await createDefaultList(user._id.toString());
 
   return { message: "Email verified successfully. You can now log in." };
 }

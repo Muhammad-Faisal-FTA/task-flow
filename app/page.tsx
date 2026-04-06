@@ -1,6 +1,7 @@
 "use client";
-import { useState } from "react";
-import { useAppState } from "@/hooks/useAppState";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthenticatedApp } from "@/hooks/useAuthenticatedApp";
 import { HomeScreen } from "@/components/task/HomeScreen";
 import { DetailScreen } from "@/components/task/DetailScreen";
 import { ListsScreen } from "@/components/task/ListsScreen";
@@ -10,8 +11,35 @@ import { Toast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 
 export default function Page() {
-  const state = useAppState();
-  const { screen, navigate, goBack, tasks, openNewTask, toast } = state;
+  const router = useRouter();
+  const state = useAuthenticatedApp();
+  const {
+    screen,
+    navigate,
+    goBack,
+    tasks,
+    openNewTask,
+    toast,
+    isLoading,
+    isAuthenticated,
+    fetchTasks,
+    fetchLists,
+  } = state;
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, isLoading, router]);
+
+  // Fetch data when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchTasks();
+      fetchLists();
+    }
+  }, [isAuthenticated, fetchTasks, fetchLists]);
 
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const hasOverdue = tasks.some((t) => t.status === "overdue" && !t.completed);
@@ -23,8 +51,8 @@ export default function Page() {
     setQuickAddOpen((v) => !v);
   };
 
-  const handleQuickAdd = (title: string) => {
-    state.saveTask({
+  const handleQuickAdd = async (title: string) => {
+    await state.saveTask({
       id: "",
       title,
       listId: state.lists[0]?.id ?? "default",
@@ -32,11 +60,25 @@ export default function Page() {
       dueDate: new Date().toISOString().split("T")[0],
       dueTime: null,
       repeat: "none",
-      status: "today",
-      hasRepeatIcon: false,
     });
     setQuickAddOpen(false);
   };
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="flex justify-center min-h-screen bg-[#030d18]">
+        <div className="flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-brand border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render app if not authenticated (will redirect)
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     /* Outer wrapper: centers the 430px phone shell on desktop */

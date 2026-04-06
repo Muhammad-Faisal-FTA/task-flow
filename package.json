@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack",
+    "dev": "node --max-old-space-size=8192 --max-semi-space-size=256 ./node_modules/next/dist/bin/next dev --webpack",
     "build": "next build",
     "start": "next start",
     "test": "jest",
@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "axios": "^1.14.0",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "dotenv": "^17.3.1",

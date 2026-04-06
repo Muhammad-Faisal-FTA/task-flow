@@ -8,7 +8,7 @@ import type { AccessTokenPayload } from "@/types/auth";
 // Route handler that receives verified user payload
 export type AuthenticatedHandler = (
   req: NextRequest,
-  context: { params: Record<string, string> },
+  context: { params: Promise<Record<string, string>> },
   user: AccessTokenPayload
 ) => Promise<NextResponse>;
 
@@ -27,7 +27,7 @@ function extractBearerToken(req: NextRequest): string | null {
 export function withAuth(handler: AuthenticatedHandler) {
   return async (
     req: NextRequest,
-    context: { params: Record<string, string> }
+    context: { params: Promise<Record<string, string>> }
   ): Promise<NextResponse> => {
     // 1. Extract token
     const token = extractBearerToken(req);
@@ -64,14 +64,14 @@ export function withAuth(handler: AuthenticatedHandler) {
 // user will be null if no valid token present
 export type OptionalAuthHandler = (
   req: NextRequest,
-  context: { params: Record<string, string> },
+  context: { params: Promise<Record<string, string>> },
   user: AccessTokenPayload | null
 ) => Promise<NextResponse>;
 
 export function withOptionalAuth(handler: OptionalAuthHandler) {
   return async (
     req: NextRequest,
-    context: { params: Record<string, string> }
+    context: { params: Promise<Record<string, string>> }
   ): Promise<NextResponse> => {
     const token = extractBearerToken(req);
 

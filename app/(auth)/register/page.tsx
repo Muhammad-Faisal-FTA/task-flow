@@ -1,8 +1,9 @@
 // app/(auth)/register/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -41,6 +42,7 @@ type RegisterFormData = z.infer<typeof RegisterSchema>;
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function RegisterPage() {
+  const router = useRouter();
   const { register: registerUser } = useAuth();
 
   const [serverError, setServerError] = useState<string | null>(null);
@@ -74,6 +76,10 @@ export default function RegisterPage() {
       setSuccessMessage(
         "Account created! Please check your email to verify your account before signing in.",
       );
+      // Auto-redirect to login after 5 seconds
+      setTimeout(() => {
+        router.push("/login");
+      }, 5000);
     } catch (err) {
       const error = err as Error & {
         status?: number;
@@ -118,8 +124,14 @@ export default function RegisterPage() {
           className="mb-6"
         />
 
-        <AuthButton variant="ghost" onClick={() => setSuccessMessage(null)}>
-          Back to Register
+        <AuthButton
+          variant="ghost"
+          onClick={() => {
+            setSuccessMessage(null);
+            router.push("/login");
+          }}
+        >
+          Go to Login
         </AuthButton>
 
         <p

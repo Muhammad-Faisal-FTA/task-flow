@@ -56,17 +56,24 @@ export function useAppState() {
       dueTime: null,
       repeat: "none",
       status: "today",
+      hasRepeatIcon: false,
     };
     setSelectedTask(blank);
     navigate("detail");
   }, [lists, navigate]);
 
-  const saveTask = useCallback((task: Task) => {
-    if (!task.title.trim()) return false;
+  const saveTask = useCallback((taskInput: Omit<Task, "id" | "status" | "hasRepeatIcon"> & { id?: string }) => {
+    if (!taskInput.title.trim()) return false;
+    const task: Task = {
+      ...taskInput,
+      id: taskInput.id || generateId(),
+      status: "today",
+      hasRepeatIcon: taskInput.repeat !== "none",
+    };
     setTasks(prev => {
       const existing = prev.find(t => t.id === task.id);
       if (existing) return prev.map(t => t.id === task.id ? task : t);
-      return [...prev, { ...task, id: generateId() }];
+      return [...prev, task];
     });
     showToast(task.id ? "Task updated ✓" : "Task added ✓");
     goBack();

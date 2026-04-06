@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -26,6 +27,7 @@ type LoginFormData = z.infer<typeof LoginSchema>;
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function LoginPage() {
+  const router = useRouter();
   const { login } = useAuth();
   const [serverError, setServerError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -43,8 +45,7 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       await login(data.email, data.password);
-      // Routing handled by consumer (useAuth redirects on success)
-      route.push("/")
+      router.push("/");
     } catch (err) {
       const error = err as Error & { status?: number };
 

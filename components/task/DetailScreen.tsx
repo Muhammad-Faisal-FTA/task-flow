@@ -6,16 +6,25 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { SelectField } from "@/components/ui/SelectField";
 import { cn } from "@/lib/cn";
 import { REPEAT_OPTIONS } from "@/lib/data";
-import type { AppState } from "@/hooks/useAppState";
-import type { Task } from "@/types";
+import type { Task, TaskList, Screen } from "@/types";
+
+// Flexible interface that works with both useAppState and useAuthenticatedApp
+interface DetailScreenState {
+  selectedTask: Task | null;
+  saveTask: (task: Omit<Task, "id" | "status" | "hasRepeatIcon"> & { id?: string }) => boolean | Promise<boolean>;
+  deleteTask: (id: string) => void;
+  goBack: () => void;
+  lists: TaskList[];
+}
 
 interface DetailScreenProps {
-  state: AppState;
+  state: DetailScreenState;
 }
 
 export function DetailScreen({ state }: DetailScreenProps) {
   const { selectedTask, saveTask, deleteTask, goBack, lists } = state;
   const [form, setForm] = useState<Task | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (selectedTask) setForm({ ...selectedTask });
@@ -30,8 +39,22 @@ export function DetailScreen({ state }: DetailScreenProps) {
   const update = <K extends keyof Task>(key: K, val: Task[K]) =>
     setForm(prev => prev ? { ...prev, [key]: val } : prev);
 
-  const handleSave = () => {
-    if (form) saveTask(form);
+  const handleSave = async () => {
+    if (!form || !form.title.trim()) return;
+    setIsSaving(true);
+    try {
+      await saveTask({
+        id: form.id || undefined,
+        title: form.title,
+        listId: form.listId,
+        completed: form.completed,
+        dueDate: form.dueDate,
+        dueTime: form.dueTime,
+        repeat: form.repeat,
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const inputCls =
