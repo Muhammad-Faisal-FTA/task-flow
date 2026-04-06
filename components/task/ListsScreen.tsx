@@ -5,10 +5,19 @@ import { HeaderBar } from "@/components/layout/HeaderBar";
 import { ListCard } from "@/components/task/ListCard";
 import { LIST_COLORS } from "@/lib/data";
 import { cn } from "@/lib/cn";
-import type { AppState } from "@/hooks/useAppState";
+import type { TaskList, Screen } from "@/types";
+
+// Flexible interface that works with both useAppState and useAuthenticatedApp
+interface ListsScreenState {
+  lists: TaskList[];
+  deleteList: (id: string) => void;
+  addList: (name: string, color: string) => void;
+  goBack: () => void;
+  navigate: (screen: Screen) => void;
+}
 
 interface ListsScreenProps {
-  state: AppState;
+  state: ListsScreenState;
 }
 
 export function ListsScreen({ state }: ListsScreenProps) {

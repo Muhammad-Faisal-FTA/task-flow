@@ -4,10 +4,20 @@ import { HeaderBar } from "@/components/layout/HeaderBar";
 import { FilterBar } from "@/components/layout/FilterBar";
 import { TaskSection } from "@/components/task/TaskSection";
 import { LayoutGrid } from "lucide-react";
-import type { AppState } from "@/hooks/useAppState";
-import type { TaskStatus } from "@/types";
+import type { Task, TaskList, Screen } from "@/types";
 
-const SECTIONS: { label: string; status: TaskStatus }[] = [
+// Flexible interface that works with both useAppState and useAuthenticatedApp
+interface HomeScreenState {
+  tasks: Task[];
+  lists: TaskList[];
+  filterListId: string | null;
+  setFilterListId: (id: string | null) => void;
+  toggleComplete: (id: string) => void;
+  openTask: (task: Task) => void;
+  navigate: (screen: Screen) => void;
+}
+
+const SECTIONS: { label: string; status: Task["status"] }[] = [
   { label: "OVERDUE", status: "overdue" },
   { label: "TODAY", status: "today" },
   { label: "TOMORROW", status: "tomorrow" },
@@ -16,7 +26,7 @@ const SECTIONS: { label: string; status: TaskStatus }[] = [
 ];
 
 interface HomeScreenProps {
-  state: AppState;
+  state: HomeScreenState;
 }
 
 export function HomeScreen({ state }: HomeScreenProps) {

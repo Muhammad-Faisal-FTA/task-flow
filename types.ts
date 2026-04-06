@@ -1,6 +1,9 @@
 // Type definitions for TaskFlow application
+// These are simplified UI types that mirror the API DTOs from types/task.ts
 
-export type TaskStatus = "overdue" | "soon" | "today" | "tomorrow" | "future" | "nodate";
+import type { TaskStatus, RepeatFrequency } from "@/types/task";
+
+export type { TaskStatus } from "@/types/task";
 
 export interface Task {
   id: string;
@@ -9,7 +12,7 @@ export interface Task {
   completed: boolean;
   dueDate: string | null;
   dueTime: string | null;
-  repeat: "none" | "daily" | "weekly" | "monthly";
+  repeat: RepeatFrequency;
   status: TaskStatus;
   hasRepeatIcon: boolean;
 }
@@ -43,11 +46,11 @@ export interface AppState {
   setSelectedTask: (task: Task | null) => void;
   openTask: (task: Task) => void;
   openNewTask: () => void;
-  saveTask: (task: Task) => boolean;
+  saveTask: (task: Omit<Task, "id" | "status" | "hasRepeatIcon"> & { id?: string }) => boolean | Promise<boolean>;
   deleteTask: (id: string) => void;
   toggleComplete: (id: string) => void;
   addList: (name: string, color: string) => void;
   deleteList: (id: string) => void;
-  toast: string;
+  toast: string | null;
   showToast: (message: string) => void;
 }

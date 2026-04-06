@@ -14,7 +14,21 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true, // ← skips type errors during build
   },
-  
+  // Webpack optimizations to reduce memory usage
+  webpack: (config, { dev, isServer }) => {
+    // Reduce memory usage in development
+    if (dev) {
+      // Disable source maps in development to save memory
+      config.devtool = false;
+      
+      // Reduce the number of files webpack processes
+      config.snapshot = {
+        managedPaths: [/^(.+?[\\/]node_modules[\\/])/],
+      };
+    }
+    
+    return config;
+  },
 };
 
 export default withPWA(nextConfig);
