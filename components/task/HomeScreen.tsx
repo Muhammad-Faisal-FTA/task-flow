@@ -1,99 +1,292 @@
+// components/task/HomeScreen.tsx
 "use client";
-import { useMemo } from "react";
-import { HeaderBar } from "@/components/layout/HeaderBar";
-import { FilterBar } from "@/components/layout/FilterBar";
-import { TaskSection } from "@/components/task/TaskSection";
+
+import { useMemo, useCallback } from "react";
 import { LayoutGrid } from "lucide-react";
-import type { Task, TaskList, Screen } from "@/types";
+import { HeaderBar }    from "@/components/layout/HeaderBar";
+import { FilterBar }    from "@/components/layout/FilterBar";
+import { TaskCard }     from "@/components/task/TaskCard";
+import { useTaskToggle } from "@/hooks/useTaskToggle";
+import type { TaskDTO, TaskListDTO } from "@/types/task";
+import type { Screen } from "@/types";
 
-// Flexible interface that works with both useAppState and useAuthenticatedApp
+// ─── Types ────────────────────────────────────────────────────────────────────
 interface HomeScreenState {
-  tasks: Task[];
-  lists: TaskList[];
-  filterListId: string | null;
+  tasks:           TaskDTO[];
+  lists:           TaskListDTO[];
+  filterListId:    string | null;
   setFilterListId: (id: string | null) => void;
-  toggleComplete: (id: string) => void;
-  openTask: (task: Task) => void;
-  navigate: (screen: Screen) => void;
+  openTask:        (task: TaskDTO) => void;
+  navigate:        (screen: Screen) => void;
+  fetchTasks?:     () => void;
+  showToast?:      (msg: string) => void;
 }
-
-const SECTIONS: { label: string; status: Task["status"] }[] = [
-  { label: "OVERDUE", status: "overdue" },
-  { label: "TODAY", status: "today" },
-  { label: "TOMORROW", status: "tomorrow" },
-  { label: "UPCOMING", status: "future" },
-  { label: "NO DATE", status: "nodate" },
-];
 
 interface HomeScreenProps {
   state: HomeScreenState;
 }
 
-export function HomeScreen({ state }: HomeScreenProps) {
-  const { tasks, lists, filterListId, setFilterListId, toggleComplete, openTask, navigate } = state;
+// ─── Section config ───────────────────────────────────────────────────────────
+const SECTIONS: { label: string; status: TaskDTO["status"] }[] = [
+  { label: "OVERDUE",  status: "overdue"   },
+  { label: "TODAY",    status: "today"     },
+  { label: "TOMORROW", status: "tomorrow"  },
+  { label: "NEXT WEEK",status: "next_week" },
+  { label: "UPCOMING", status: "future"    },
+  { label: "NO DATE",  status: "nodate"    },
+];
 
-  const totalOverdue = useMemo(() => tasks.filter(t => t.status === "overdue" && !t.completed).length, [tasks]);
-  const totalToday = useMemo(() => tasks.filter(t => t.status === "today" && !t.completed).length, [tasks]);
+const SECTION_DOT: Record<string, string> = {
+  overdue:   "var(--color-overdue)",
+  today:     "var(--color-today)",
+  tomorrow:  "var(--color-accent)",
+  next_week: "var(--color-primary)",
+  future:    "var(--color-text-secondary)",
+  nodate:    "var(--color-text-hint)",
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
+export function HomeScreen({ state }: HomeScreenProps) {
+  const {
+    tasks,
+    lists,
+    filterListId,
+    setFilterListId,
+    openTask,
+    navigate,
+    fetchTasks,
+    showToast,
+  } = state;
+
+  // ── Stats ──────────────────────────────────────────────────────────────────
+  const totalOverdue = useMemo(
+    () => tasks.filter(t => t.status === "overdue" && !t.completed).length,
+    [tasks]
+  );
+  const totalToday = useMemo(
+    () => tasks.filter(t => t.status === "today" && !t.completed).length,
+    [tasks]
+  );
+
+  // ── Toggle hook ────────────────────────────────────────────────────────────
+  const { toggle, isToggling } = useTaskToggle({
+    onSuccess: useCallback(() => {
+      fetchTasks?.();
+    }, [fetchTasks]),
+    onError: useCallback((msg: string) => {
+      showToast?.(msg);
+    }, [showToast]),
+  });
+
+  // ── Empty state ────────────────────────────────────────────────────────────
+  const isEmpty = tasks.length === 0;
 
   return (
     <div className="flex flex-col h-full">
+
+      {/* Header */}
       <HeaderBar
         title="✓ All Tasks"
         rightAction={
           <button
             onClick={() => navigate("lists")}
-            className="w-9 h-9 flex items-center justify-center rounded-[8px] bg-layer-2 active:bg-layer-3 transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded-[8px] active:scale-90 transition-transform"
+            style={{ backgroundColor: "var(--color-bg-card)" }}
           >
-            <LayoutGrid className="w-4 h-4 text-text-tag" />
+            <LayoutGrid
+              className="w-4 h-4"
+              style={{ color: "var(--color-text-hint)" }}
+            />
           </button>
         }
       />
 
-      <FilterBar lists={lists} activeId={filterListId} onChange={setFilterListId} />
+      {/* Filter pills */}
+      <FilterBar
+        lists={lists}
+        activeId={filterListId}
+        onChange={setFilterListId}
+      />
 
       {/* Stats strip */}
       {!filterListId && (
-        <div className="flex gap-2 px-4 py-2 bg-layer-0">
-          <div className="flex-1 bg-layer-2 rounded-card px-3 py-2 border-l-[3px] border-l-status-overdue">
-            <p className="text-[22px] font-bold text-status-overdue leading-none">{totalOverdue}</p>
-            <p className="text-[11px] text-text-tag mt-0.5">Overdue</p>
+        <div
+          className="flex gap-2 px-4 py-2"
+          style={{ backgroundColor: "var(--color-bg-app)" }}
+        >
+          {/* Overdue */}
+          <div
+            className="flex-1 rounded-card px-3 py-2"
+            style={{
+              backgroundColor: "var(--color-bg-card)",
+              borderLeft:      "3px solid var(--color-overdue)",
+            }}
+          >
+            <p
+              className="font-bold leading-none"
+              style={{
+                fontSize: "22px",
+                color:    "var(--color-overdue)",
+              }}
+            >
+              {totalOverdue}
+            </p>
+            <p
+              className="mt-0.5"
+              style={{
+                fontSize: "var(--text-xs)",
+                color:    "var(--color-text-hint)",
+              }}
+            >
+              Overdue
+            </p>
           </div>
-          <div className="flex-1 bg-layer-2 rounded-card px-3 py-2 border-l-[3px] border-l-status-today">
-            <p className="text-[22px] font-bold text-status-today leading-none">{totalToday}</p>
-            <p className="text-[11px] text-text-tag mt-0.5">Due Today</p>
+
+          {/* Today */}
+          <div
+            className="flex-1 rounded-card px-3 py-2"
+            style={{
+              backgroundColor: "var(--color-bg-card)",
+              borderLeft:      "3px solid var(--color-today)",
+            }}
+          >
+            <p
+              className="font-bold leading-none"
+              style={{
+                fontSize: "22px",
+                color:    "var(--color-today)",
+              }}
+            >
+              {totalToday}
+            </p>
+            <p
+              className="mt-0.5"
+              style={{
+                fontSize: "var(--text-xs)",
+                color:    "var(--color-text-hint)",
+              }}
+            >
+              Due Today
+            </p>
           </div>
-          <div className="flex-1 bg-layer-2 rounded-card px-3 py-2 border-l-[3px] border-l-brand-highlight">
-            <p className="text-[22px] font-bold text-brand-highlight leading-none">{tasks.length}</p>
-            <p className="text-[11px] text-text-tag mt-0.5">Total</p>
+
+          {/* Total */}
+          <div
+            className="flex-1 rounded-card px-3 py-2"
+            style={{
+              backgroundColor: "var(--color-bg-card)",
+              borderLeft:      "3px solid var(--color-accent)",
+            }}
+          >
+            <p
+              className="font-bold leading-none"
+              style={{
+                fontSize: "22px",
+                color:    "var(--color-accent)",
+              }}
+            >
+              {tasks.length}
+            </p>
+            <p
+              className="mt-0.5"
+              style={{
+                fontSize: "var(--text-xs)",
+                color:    "var(--color-text-hint)",
+              }}
+            >
+              Total
+            </p>
           </div>
         </div>
       )}
 
-      {/* Sections */}
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-24 scrollbar-none">
-        {SECTIONS.map(({ label, status }) => {
-          const sectionTasks = tasks.filter(t => t.status === status);
-          return (
-            <TaskSection
-              key={status}
-              label={label}
-              status={status}
-              tasks={sectionTasks}
-              lists={lists}
-              onToggle={toggleComplete}
-              onClick={openTask}
-            />
-          );
-        })}
-
-        {tasks.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-text-tag">
-            <div className="w-16 h-16 rounded-full bg-layer-2 flex items-center justify-center mb-4">
-              <span className="text-3xl">✓</span>
+      {/* Task sections */}
+      <div
+        className="flex-1 overflow-y-auto scrollbar-hide"
+        style={{ padding: "16px 16px 100px" }}
+      >
+        {isEmpty ? (
+          // Empty state
+          <div
+            className="flex flex-col items-center justify-center py-20"
+            style={{ color: "var(--color-text-hint)" }}
+          >
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
+              style={{ backgroundColor: "var(--color-bg-card)" }}
+            >
+              <span style={{ fontSize: "28px" }}>✓</span>
             </div>
-            <p className="text-[15px] font-medium text-text-primary">All done!</p>
-            <p className="text-[13px] mt-1">No tasks here.</p>
+            <p
+              className="font-medium"
+              style={{
+                fontSize: "var(--text-md)",
+                color:    "var(--color-text-primary)",
+              }}
+            >
+              All done!
+            </p>
+            <p
+              className="mt-1"
+              style={{ fontSize: "var(--text-sm)" }}
+            >
+              No tasks here.
+            </p>
           </div>
+        ) : (
+          SECTIONS.map(({ label, status }) => {
+            const sectionTasks = tasks.filter(
+              t => t.status === status && !t.completed
+            );
+
+            if (sectionTasks.length === 0) return null;
+
+            return (
+              <div key={status} className="mb-5">
+                {/* Section header */}
+                <div
+                  className="flex items-center gap-2 mb-2.5"
+                >
+                  <span
+                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: SECTION_DOT[status] }}
+                  />
+                  <span
+                    className="font-semibold tracking-widest uppercase"
+                    style={{
+                      fontSize: "var(--text-xs)",
+                      color:    SECTION_DOT[status],
+                    }}
+                  >
+                    {label}
+                  </span>
+                  <span
+                    className="ml-auto"
+                    style={{
+                      fontSize: "var(--text-xs)",
+                      color:    "var(--color-text-hint)",
+                    }}
+                  >
+                    {sectionTasks.length}
+                  </span>
+                </div>
+
+                {/* Task cards */}
+                <div className="flex flex-col gap-2">
+                  {sectionTasks.map(task => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      list={lists.find(l => l.id === task.listId)}
+                      onToggle={toggle}
+                      onClick={openTask}
+                      isToggling={isToggling(task.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
     </div>
