@@ -1,0 +1,116 @@
+MIT License
+
+Copyright (c) 2024 TaskFlow
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## Additional Terms and Security Notice
+
+### 1. Security and Privacy
+This software implements industry-standard security practices including:
+- JWT-based authentication with secure token management
+- Password hashing using bcryptjs
+- Input validation and sanitization
+- CORS protection
+- Rate limiting on authentication endpoints
+
+However, users are responsible for:
+- Properly configuring environment variables
+- Using strong, unique passwords
+- Securing their MongoDB instances
+- Implementing HTTPS in production
+- Regular security updates and monitoring
+
+### 2. Data Protection
+When deploying this application, you are responsible for:
+- Complying with applicable data protection laws (GDPR, CCPA, etc.)
+- Implementing appropriate data backup and recovery procedures
+- Securing user data and maintaining privacy
+- Obtaining necessary consents for data collection
+- Providing users with data access and deletion capabilities
+
+### 3. Third-Party Services
+This application may integrate with third-party services:
+- Email providers (for verification and password reset)
+- Database hosting services (MongoDB Atlas)
+- Authentication providers
+- Analytics services (if implemented)
+
+Users must comply with the terms of service and privacy policies of these providers.
+
+### 4. Limitation of Liability
+THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED.
+THE AUTHORS AND COPYRIGHT HOLDERS SHALL NOT BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING FROM THE USE OF
+OR INABILITY TO USE THIS SOFTWARE, INCLUDING BUT NOT LIMITED TO:
+- LOSS OF DATA OR PROFITS
+- BUSINESS INTERRUPTION
+- SECURITY BREACHES OR DATA LEAKS
+- UNAUTHORIZED ACCESS TO USER DATA
+- ANY OTHER PECUNIARY LOSS
+
+### 5. User Responsibilities
+Users of this software agree to:
+- Not use the software for illegal or unauthorized purposes
+- Not attempt to bypass security measures
+- Not reverse engineer, decompile, or disassemble the software
+- Not remove or alter any proprietary notices
+- Comply with all applicable laws and regulations
+- Maintain the confidentiality of their credentials
+
+### 6. Security Updates
+While the authors strive to maintain security:
+- Users are responsible for keeping their installations updated
+- Security vulnerabilities should be reported responsibly
+- No guarantee is provided for timely security patches
+- Users should monitor for and apply security updates promptly
+
+### 7. Open Source Components
+This software includes open source dependencies:
+- Next.js (MIT License)
+- React (MIT License)
+- MongoDB/Mongoose (MIT/Various Licenses)
+- Tailwind CSS (MIT License)
+- And others as listed in package.json
+
+Each dependency is subject to its own license terms.
+
+### 8. No Warranty
+THIS SOFTWARE IS PROVIDED WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE, AND NONINFRINGEMENT. THE ENTIRE RISK AS TO THE QUALITY AND
+PERFORMANCE OF THE SOFTWARE IS WITH YOU. SHOULD THE SOFTWARE PROVE DEFECTIVE,
+YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR, OR CORRECTION.
+
+### 9. Jurisdiction
+This license shall be governed by and construed in accordance with the laws of
+the jurisdiction in which the copyright holder is located, without regard to
+its conflict of law provisions.
+
+### 10. Severability
+If any provision of this license is held to be invalid or unenforceable, the
+remaining provisions shall continue in full force and effect.
+
+---
+
+For security concerns or to report vulnerabilities, please contact the maintainers.
+
+Last Updated: 2024
