@@ -39,6 +39,7 @@ export function useAuthenticatedApp() {
     toast: appClient.toast,
     isLoadingData: appClient.isLoading,
     error: appClient.error,
+    updateList: appClient.updateList,
     
     // Auth actions
     login: auth.login,

@@ -186,6 +186,12 @@ export const listApi = {
     return response.data.data;
   },
 
+  // In services/apiService.ts — inside listApi object
+updateList: async (id: string, data: { name?: string; color?: string }) => {
+  const res = await api.patch(`/api/lists/${id}`, data);
+  return res.data.data as TaskListDTO;
+},
+
   /**
    * Delete a list
    */
