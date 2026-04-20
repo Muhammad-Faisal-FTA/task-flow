@@ -30,6 +30,7 @@ export const INITIAL_TASKS: Task[] = [
     dueTime: "21:30",
     repeat: "none",
     status: "overdue",
+    hasRepeatIcon: false
   },
   {
     id: "t2",
@@ -51,6 +52,7 @@ export const INITIAL_TASKS: Task[] = [
     dueTime: "19:00",
     repeat: "none",
     status: "today",
+    hasRepeatIcon: false
   },
   {
     id: "t4",
