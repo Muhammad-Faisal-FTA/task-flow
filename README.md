@@ -209,7 +209,7 @@ Please ensure your code follows the existing style and includes appropriate test
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## 🕯️ Acknowledgments
 
 - [Next.js](https://nextjs.org/) - The React Framework
 - [MongoDB](https://www.mongodb.com/) - The Developer Data Platform
