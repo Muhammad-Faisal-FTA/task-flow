@@ -82,24 +82,29 @@ export default function RootLayout({
     <html lang="en">
       <head>
         {/* iOS PWA meta tags */}
-        <meta name="apple-mobile-web-app-capable"          content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title"            content="TaskFlow" />
-        <meta name="mobile-web-app-capable"                content="yes" />
-        <meta name="msapplication-TileColor"               content="#071A2E" />
-        <meta name="msapplication-tap-highlight"           content="no" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+        <meta name="apple-mobile-web-app-title" content="TaskFlow" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="msapplication-TileColor" content="#071A2E" />
+        <meta name="msapplication-tap-highlight" content="no" />
 
         {/* Splash screen colors */}
-        <meta name="theme-color"                           content="#071A2E" />
+        <meta name="theme-color" content="#071A2E" />
 
         {/* Preconnect for performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
       </head>
-      <body>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+      <body suppressHydrationWarning>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

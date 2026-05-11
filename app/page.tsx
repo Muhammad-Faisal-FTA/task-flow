@@ -11,7 +11,7 @@ import { DetailScreen } from "@/components/task/DetailScreen";
 import { ListsScreen } from "@/components/task/ListsScreen";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { QuickAddBar } from "@/components/task/QuickAddBar";
-import { FocusPopup } from "@/components/cdf/FocusPopup";
+import { FocusPopup } from "../components/task/FocusPopup";
 import { Toast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import type { TaskDTO } from "@/types/task";
