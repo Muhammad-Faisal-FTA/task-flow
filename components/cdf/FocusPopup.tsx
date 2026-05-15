@@ -336,8 +336,8 @@ export function FocusPopup({
                   background: "transparent",
                   cursor: "pointer",
                   outline: "none",
-                  // Thumb styles via CSS vars trick
-                  // @ts-expect-error
+                  //  Thumb styles via CSS vars trick
+                  //  @ts-expect-error
                   "--thumb-color": gradeColor,
                 }}
               />
