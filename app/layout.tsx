@@ -1,42 +1,6 @@
-// import type { Metadata } from "next";
-// import { Geist, Geist_Mono } from "next/font/google";
-// import "./globals.css";
-// import "./custom-classes.css";
-
-// const geistSans = Geist({
-//   variable: "--font-geist-sans",
-//   subsets: ["latin"],
-// });
-
-// const geistMono = Geist_Mono({
-//   variable: "--font-geist-mono",
-//   subsets: ["latin"],
-// });
-
-// export const metadata: Metadata = {
-//   title: "TaskFlow",
-//   description:
-//     "A task management app to realize Discipline, Focus and Consistency.",
-// };
-
-// import { AuthProvider } from "@/hooks/useAuth";
-
-// export default function RootLayout({
-//   children,
-// }: {
-//   children: React.ReactNode;
-// }) {
-//   return (
-//     <html lang="en">
-//       <body>
-//         <AuthProvider>{children}</AuthProvider>
-//       </body>
-//     </html>
-//   );
-// }
-
-
 // app/layout.tsx
+// "use client";
+// import { useEffect } from "react";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/hooks/useAuth";
@@ -44,34 +8,48 @@ import { AuthProvider } from "@/hooks/useAuth";
 export const metadata: Metadata = {
   title: {
     template: "%s | TaskFlow",
-    default:  "TaskFlow — Task Manager",
+    default: "TaskFlow — Task Manager",
   },
   description: "Manage your tasks efficiently with TaskFlow",
-  manifest:    "/manifest.json",
+  manifest: "/manifest.json",
   appleWebApp: {
-    capable:           true,
-    statusBarStyle:    "black-translucent",
-    title:             "TaskFlow",
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "TaskFlow",
   },
   icons: {
     icon: [
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
       { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
     ],
-    apple: [
-      { url: "/apple-touch-icon.png", sizes: "180x180" },
-    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
   },
 };
 
 export const viewport: Viewport = {
-  width:            "device-width",
-  initialScale:     1,
-  maximumScale:     1,
-  userScalable:     false,
-  themeColor:       "#071A2E",
-  viewportFit:      "cover",   // ← handles iPhone notch
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#071A2E",
+  viewportFit: "cover", // ← handles iPhone notch
 };
+
+// export function ServiceWorkerRegistrar() {
+//   useEffect(() => {
+//     if (
+//       typeof window !== "undefined" &&
+//       "serviceWorker" in navigator &&
+//       process.env.NODE_ENV === "production"
+//     ) {
+//       // next-pwa registers its own SW — our custom SW runs alongside
+//       navigator.serviceWorker
+//         .register("/sw-custom.js")
+//         .then((reg) => console.log("[SW] Custom SW registered", reg.scope))
+//         .catch((err) => console.error("[SW] Custom SW failed", err));
+//     }
+//   }, []);
+// }
 
 export default function RootLayout({
   children,
