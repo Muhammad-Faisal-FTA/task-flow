@@ -293,52 +293,53 @@
 //   );
 // }
 
-
-
 // components/task/HomeScreen.tsx
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
 import { LayoutGrid, Search } from "lucide-react";
-import { HeaderBar }     from "@/components/layout/HeaderBar";
-import { FilterBar }     from "@/components/layout/FilterBar";
-import { TaskCard }      from "@/components/task/TaskCard";
-import { SearchBar }     from "@/components/task/SearchBar";
+import { HeaderBar } from "@/components/layout/HeaderBar";
+import { FilterBar } from "@/components/layout/FilterBar";
+import { TaskCard } from "@/components/task/TaskCard";
+import { SearchBar } from "@/components/task/SearchBar";
 import { SearchResults } from "@/components/task/SearchResults";
 import { useTaskToggle } from "@/hooks/useTaskToggle";
-import { useSearch }     from "@/hooks/useSearch";
+import { useSearch } from "@/hooks/useSearch";
 import type { TaskDTO, TaskListDTO } from "@/types/task";
+import type { CdfEventDTO } from "@/types/cdf";
 import type { Screen } from "@/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface HomeScreenState {
-  tasks:           TaskDTO[];
-  lists:           TaskListDTO[];
-  filterListId:    string | null;
+  tasks: TaskDTO[];
+  lists: TaskListDTO[];
+  filterListId: string | null;
   setFilterListId: (id: string | null) => void;
-  openTask:        (task: TaskDTO) => void;
-  navigate:        (screen: Screen) => void;
-  fetchTasks?:     () => void;
-  showToast?:      (msg: string) => void;
+  openTask: (task: TaskDTO) => void;
+  navigate: (screen: Screen) => void;
+  fetchTasks?: () => void;
+  showToast?: (msg: string) => void;
+  cdfEnabled?: boolean;
+  onCdfEvent?: (event: CdfEventDTO, taskTitle: string) => void;
 }
 
 // ─── Section config ───────────────────────────────────────────────────────────
 const SECTIONS: { label: string; status: TaskDTO["status"] }[] = [
-  { label: "OVERDUE",   status: "overdue"   },
-  { label: "TODAY",     status: "today"     },
-  { label: "TOMORROW",  status: "tomorrow"  },
+  { label: "OVERDUE", status: "overdue" },
+  { label: "TODAY", status: "today" },
+  { label: "TOMORROW", status: "tomorrow" },
   { label: "NEXT WEEK", status: "next_week" },
-  { label: "UPCOMING",  status: "future"    },
-  { label: "NO DATE",   status: "nodate"    },
+  { label: "UPCOMING", status: "future" },
+  { label: "NO DATE", status: "nodate" },
 ];
 
 const SECTION_DOT: Record<string, string> = {
-  overdue:   "var(--color-overdue)",
-  today:     "var(--color-today)",
-  tomorrow:  "var(--color-accent)",
+  overdue: "var(--color-overdue)",
+  today: "var(--color-today)",
+  tomorrow: "var(--color-accent)",
   next_week: "var(--color-primary)",
-  future:    "var(--color-text-secondary)",
-  nodate:    "var(--color-text-hint)",
+  future: "var(--color-text-secondary)",
+  nodate: "var(--color-text-hint)",
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -352,6 +353,8 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
     navigate,
     fetchTasks,
     showToast,
+    cdfEnabled,
+    onCdfEvent,
   } = state;
 
   // ── Search state ───────────────────────────────────────────────────────────
@@ -368,18 +371,39 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
 
   // ── Stats ──────────────────────────────────────────────────────────────────
   const totalOverdue = useMemo(
-    () => tasks.filter(t => t.status === "overdue" && !t.completed).length,
-    [tasks]
+    () => tasks.filter((t) => t.status === "overdue" && !t.completed).length,
+    [tasks],
   );
   const totalToday = useMemo(
-    () => tasks.filter(t => t.status === "today" && !t.completed).length,
-    [tasks]
+    () => tasks.filter((t) => t.status === "today" && !t.completed).length,
+    [tasks],
   );
 
-  // ── Toggle hook ────────────────────────────────────────────────────────────
+  // ── Stable callbacks for useTaskToggle ────────────────────────────────────
+  const handleSuccess = useCallback(() => {
+    fetchTasks?.();
+  }, [fetchTasks]);
+
+  const handleError = useCallback(
+    (msg: string) => {
+      showToast?.(msg);
+    },
+    [showToast],
+  );
+
+  const handleCdfEvent = useCallback(
+    (event: CdfEventDTO, title: string) => {
+      onCdfEvent?.(event, title);
+    },
+    [onCdfEvent],
+  );
+
+  // ── Toggle hook — INSIDE component ────────────────────────────────────────
   const { toggle, isToggling } = useTaskToggle({
-    onSuccess: useCallback(() => fetchTasks?.(), [fetchTasks]),
-    onError:   useCallback((msg: string) => showToast?.(msg), [showToast]),
+    onSuccess: handleSuccess,
+    onError: handleError,
+    isCdfEnabled: cdfEnabled ?? false,
+    onCdfEvent: handleCdfEvent,
   });
 
   // ── Search handlers ────────────────────────────────────────────────────────
@@ -392,24 +416,23 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
     clearSearch();
   }, [clearSearch]);
 
-  // Convert TaskDTO → TaskDTO (already correct type, just pass through)
-  const handleSearchTaskClick = useCallback((task: TaskDTO) => {
-    openTask(task);
-    handleCloseSearch();
-  }, [openTask, handleCloseSearch]);
+  const handleSearchTaskClick = useCallback(
+    (task: TaskDTO) => {
+      openTask(task);
+      handleCloseSearch();
+    },
+    [openTask, handleCloseSearch],
+  );
 
   const isEmpty = tasks.length === 0;
 
   return (
     <div className="flex flex-col h-full">
-
       {/* ── Header ────────────────────────────────────────────────────── */}
       <HeaderBar
         title="✓ All Tasks"
         rightAction={
           <div className="flex items-center gap-2">
-
-            {/* Search button */}
             <button
               onClick={searchOpen ? handleCloseSearch : handleOpenSearch}
               className="w-9 h-9 flex items-center justify-center rounded-[8px] active:scale-90 transition-all duration-200"
@@ -423,14 +446,11 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
               <Search
                 className="w-4 h-4"
                 style={{
-                  color: searchOpen
-                    ? "#ffffff"
-                    : "var(--color-text-hint)",
+                  color: searchOpen ? "#ffffff" : "var(--color-text-hint)",
                 }}
               />
             </button>
 
-            {/* Lists button */}
             <button
               onClick={() => navigate("lists")}
               className="w-9 h-9 flex items-center justify-center rounded-[8px] active:scale-90 transition-transform"
@@ -445,7 +465,7 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
         }
       />
 
-      {/* ── Search bar — slide down from header ───────────────────────── */}
+      {/* ── Search bar ────────────────────────────────────────────────── */}
       <SearchBar
         open={searchOpen}
         query={query}
@@ -455,7 +475,7 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
         onClose={handleCloseSearch}
       />
 
-      {/* ── Filter pills — hidden during search ───────────────────────── */}
+      {/* ── Filter pills ──────────────────────────────────────────────── */}
       {!searchOpen && (
         <FilterBar
           lists={lists}
@@ -464,23 +484,35 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
         />
       )}
 
-      {/* ── Stats strip — hidden during search + when list filtered ──── */}
+      {/* ── Stats strip ───────────────────────────────────────────────── */}
       {!filterListId && !searchOpen && (
         <div
           className="flex gap-2 px-4 py-2"
           style={{ backgroundColor: "var(--color-bg-app)" }}
         >
           {[
-            { count: totalOverdue, label: "Overdue",  color: "var(--color-overdue)" },
-            { count: totalToday,   label: "Due Today", color: "var(--color-today)"  },
-            { count: tasks.length, label: "Total",     color: "var(--color-accent)" },
+            {
+              count: totalOverdue,
+              label: "Overdue",
+              color: "var(--color-overdue)",
+            },
+            {
+              count: totalToday,
+              label: "Due Today",
+              color: "var(--color-today)",
+            },
+            {
+              count: tasks.length,
+              label: "Total",
+              color: "var(--color-accent)",
+            },
           ].map(({ count, label, color }) => (
             <div
               key={label}
               className="flex-1 rounded-card px-3 py-2"
               style={{
                 backgroundColor: "var(--color-bg-card)",
-                borderLeft:      `3px solid ${color}`,
+                borderLeft: `3px solid ${color}`,
               }}
             >
               <p
@@ -493,7 +525,7 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
                 className="mt-0.5"
                 style={{
                   fontSize: "var(--text-xs)",
-                  color:    "var(--color-text-hint)",
+                  color: "var(--color-text-hint)",
                 }}
               >
                 {label}
@@ -508,8 +540,6 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
         className="flex-1 overflow-y-auto scrollbar-hide"
         style={{ padding: "16px 16px 100px" }}
       >
-
-        {/* Search mode */}
         {searchOpen ? (
           <SearchResults
             query={query}
@@ -519,9 +549,7 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
             hasSearched={hasSearched}
             onTaskClick={handleSearchTaskClick}
           />
-
         ) : isEmpty ? (
-          /* Empty state */
           <div
             className="flex flex-col items-center justify-center py-20"
             style={{ color: "var(--color-text-hint)" }}
@@ -536,7 +564,7 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
               className="font-medium"
               style={{
                 fontSize: "var(--text-md)",
-                color:    "var(--color-text-primary)",
+                color: "var(--color-text-primary)",
               }}
             >
               All done!
@@ -545,19 +573,16 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
               No tasks here.
             </p>
           </div>
-
         ) : (
-          /* Task sections */
           SECTIONS.map(({ label, status }) => {
             const sectionTasks = tasks.filter(
-              t => t.status === status && !t.completed
+              (t) => t.status === status && !t.completed,
             );
 
             if (sectionTasks.length === 0) return null;
 
             return (
               <div key={status} className="mb-5">
-
                 {/* Section header */}
                 <div className="flex items-center gap-2 mb-2.5">
                   <span
@@ -568,7 +593,7 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
                     className="font-semibold tracking-widest uppercase"
                     style={{
                       fontSize: "var(--text-xs)",
-                      color:    SECTION_DOT[status],
+                      color: SECTION_DOT[status],
                     }}
                   >
                     {label}
@@ -577,7 +602,7 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
                     className="ml-auto"
                     style={{
                       fontSize: "var(--text-xs)",
-                      color:    "var(--color-text-hint)",
+                      color: "var(--color-text-hint)",
                     }}
                   >
                     {sectionTasks.length}
@@ -586,11 +611,11 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
 
                 {/* Task cards */}
                 <div className="flex flex-col gap-2">
-                  {sectionTasks.map(task => (
+                  {sectionTasks.map((task) => (
                     <TaskCard
                       key={task.id}
                       task={task}
-                      list={lists.find(l => l.id === task.listId)}
+                      list={lists.find((l) => l.id === task.listId)}
                       onToggle={toggle}
                       onClick={openTask}
                       isToggling={isToggling(task.id)}

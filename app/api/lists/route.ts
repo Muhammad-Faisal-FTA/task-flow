@@ -36,7 +36,7 @@ const CreateListSchema = z.object({
 // ─── GET /api/lists ───────────────────────────────────────────────────────────
 const getHandler = async (
   _req: NextRequest,
-  _ctx: { params: Record<string, string> },
+  _ctx: { params: Promise<Record<string, string>> },
   user: AccessTokenPayload
 ): Promise<NextResponse> => {
   try {

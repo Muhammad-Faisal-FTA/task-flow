@@ -1,70 +1,29 @@
-// import type { NextConfig } from "next";
-// import withPWAInit from "next-pwa";
-
-// const withPWA = withPWAInit({
-//   dest: "public",
-//   register: true,
-//   skipWaiting: true,
-//   disable: process.env.NODE_ENV === "development", // disable PWA in dev
-// });
-
-// const nextConfig: NextConfig = {
-//   reactStrictMode: true,
-//   turbopack: {}, // prevents warning
-//   typescript: {
-//     ignoreBuildErrors: true, // ← skips type errors during build
-//   },
-//   // Webpack optimizations to reduce memory usage
-//   webpack: (config, { dev, isServer }) => {
-//     // Reduce memory usage in development
-//     if (dev) {
-//       // Disable source maps in development to save memory
-//       config.devtool = false;
-      
-//       // Reduce the number of files webpack processes
-//       config.snapshot = {
-//         managedPaths: [/^(.+?[\\/]node_modules[\\/])/],
-//       };
-//     }
-    
-//     return config;
-//   },
-// };
-
-// export default withPWA(nextConfig);
-
-
-
-
 // next.config.ts
 import type { NextConfig } from "next";
-import withPWAInit from "next-pwa";
+import withPWAInit         from "next-pwa";
 
 const withPWA = withPWAInit({
   dest:        "public",
   register:    true,
   skipWaiting: true,
+  disable:     process.env.DISABLE_PWA === "true",
 
-  // ── Only disable in dev when explicitly needed ──────────────────────────
-  // Set DISABLE_PWA=true in .env to disable
-  disable: process.env.DISABLE_PWA === "true",
-
-  // ── Runtime caching ─────────────────────────────────────────────────────
   runtimeCaching: [
-    // API routes — network first, fall back to cache
+    // API routes — network first, 5 min cache
     {
       urlPattern: /^https?.*\/api\/.*/i,
       handler:    "NetworkFirst",
       options: {
-        cacheName:          "api-cache",
+        cacheName: "api-cache",
         expiration: {
-          maxEntries:       50,
-          maxAgeSeconds:    5 * 60, // 5 minutes
+          maxEntries:    50,
+          maxAgeSeconds: 5 * 60,
         },
         networkTimeoutSeconds: 10,
       },
     },
-    // Static assets — cache first
+
+    // Static assets — cache first, 30 days
     {
       urlPattern: /\.(?:js|css|woff2|woff|ttf|png|jpg|jpeg|svg|ico)$/i,
       handler:    "CacheFirst",
@@ -72,11 +31,12 @@ const withPWA = withPWAInit({
         cacheName: "static-assets",
         expiration: {
           maxEntries:    100,
-          maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+          maxAgeSeconds: 30 * 24 * 60 * 60,
         },
       },
     },
-    // Google Fonts
+
+    // Google Fonts stylesheets — stale while revalidate
     {
       urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
       handler:    "StaleWhileRevalidate",
@@ -84,6 +44,8 @@ const withPWA = withPWAInit({
         cacheName: "google-fonts-stylesheets",
       },
     },
+
+    // Google Fonts files — cache first, 1 year
     {
       urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
       handler:    "CacheFirst",
@@ -91,11 +53,12 @@ const withPWA = withPWAInit({
         cacheName: "google-fonts-webfonts",
         expiration: {
           maxEntries:    30,
-          maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+          maxAgeSeconds: 365 * 24 * 60 * 60,
         },
       },
     },
-    // Pages — network first
+
+    // All other pages — network first, 24h cache
     {
       urlPattern: /^https?.*$/,
       handler:    "NetworkFirst",
@@ -104,27 +67,24 @@ const withPWA = withPWAInit({
         networkTimeoutSeconds: 15,
         expiration: {
           maxEntries:    50,
-          maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          maxAgeSeconds: 24 * 60 * 60,
         },
       },
     },
   ],
-});
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+} as any);
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-
-  // ── Remove turbopack — conflicts with --webpack flag ────────────────────
-  // turbopack: {},   ← REMOVED
 
   typescript: {
     ignoreBuildErrors: true,
   },
 
-  // ── Webpack config ───────────────────────────────────────────────────────
   webpack: (config, { dev }) => {
     if (dev) {
-      config.devtool = false;
+      config.devtool  = false;
       config.snapshot = {
         managedPaths: [/^(.+?[\\/]node_modules[\\/])/],
       };

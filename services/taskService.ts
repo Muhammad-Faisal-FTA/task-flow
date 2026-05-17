@@ -1,16 +1,17 @@
 // services/taskService.ts
 
 import mongoose from "mongoose";
-import { connectDB } from "@/lib/mongoose";
-import { TaskModel } from "@/models/task.model";
-import { TaskListModel } from "@/models/taskList.model";
-import { deriveStatus, parseDueDate, formatDueDate } from "@/utils/deriveStatus";
+import { connectDB }       from "@/lib/mongoose";
+import { TaskModel }       from "@/models/task.model";
+import { TaskListModel }   from "@/models/taskList.model";
+import {
+  deriveStatus,
+  parseDueDate,
+  formatDueDate,
+} from "@/utils/deriveStatus";
 import {
   groupTasksByStatus,
-  filterByList,
   searchTasks,
-  filterNotDeleted,
-  countOverdue,
 } from "@/utils/taskGrouping";
 import type {
   ITask,
@@ -34,7 +35,6 @@ function toObjectId(id: string): mongoose.Types.ObjectId {
   return new mongoose.Types.ObjectId(id);
 }
 
-// Serialise Mongoose Task document → clean TaskDTO
 function serialiseTask(doc: ITask): TaskDTO {
   return {
     id:          doc._id.toString(),
@@ -53,7 +53,6 @@ function serialiseTask(doc: ITask): TaskDTO {
   };
 }
 
-// Serialise Mongoose TaskList document → clean TaskListDTO
 function serialiseList(
   doc: ITaskList,
   taskCount    = 0,
@@ -73,14 +72,15 @@ function serialiseList(
 }
 
 // ─── Error codes ──────────────────────────────────────────────────────────────
+
 export const TASK_ERRORS: Record<string, { status: number; message: string }> = {
-  INVALID_ID:          { status: 400,  message: "Invalid ID format." },
-  TASK_NOT_FOUND:      { status: 404,  message: "Task not found." },
-  LIST_NOT_FOUND:      { status: 404,  message: "List not found." },
-  FORBIDDEN:           { status: 403,  message: "You do not have permission to perform this action." },
-  LIST_NAME_TAKEN:     { status: 409,  message: "A list with this name already exists." },
-  CANNOT_DELETE_DEFAULT: { status: 400, message: "Cannot delete the default list." },
-  LIST_HAS_TASKS:      { status: 400,  message: "Cannot delete a list that contains tasks. Move or delete tasks first." },
+  INVALID_ID:            { status: 400, message: "Invalid ID format."                                                    },
+  TASK_NOT_FOUND:        { status: 404, message: "Task not found."                                                       },
+  LIST_NOT_FOUND:        { status: 404, message: "List not found."                                                       },
+  FORBIDDEN:             { status: 403, message: "You do not have permission to perform this action."                    },
+  LIST_NAME_TAKEN:       { status: 409, message: "A list with this name already exists."                                 },
+  CANNOT_DELETE_DEFAULT: { status: 400, message: "Cannot delete the default list."                                       },
+  LIST_HAS_TASKS:        { status: 400, message: "Cannot delete a list that contains tasks. Move or delete tasks first." },
 };
 
 export function resolveTaskError(
@@ -96,11 +96,95 @@ export function resolveTaskError(
   );
 }
 
+// ─── Repeat: next due date calculation ───────────────────────────────────────
+function getNextDueDate(
+  currentDueDate: Date,
+  repeat: string
+): Date | null {
+  const d = new Date(currentDueDate);
+
+  switch (repeat) {
+    case "daily":
+      d.setDate(d.getDate() + 1);
+      return d;
+
+    case "weekdays": {
+      // Skip Saturday (6) and Sunday (0)
+      d.setDate(d.getDate() + 1);
+      while (d.getDay() === 0 || d.getDay() === 6) {
+        d.setDate(d.getDate() + 1);
+      }
+      return d;
+    }
+
+    case "weekly":
+      d.setDate(d.getDate() + 7);
+      return d;
+
+    case "monthly":
+      d.setMonth(d.getMonth() + 1);
+      return d;
+
+    case "yearly":
+      d.setFullYear(d.getFullYear() + 1);
+      return d;
+
+    default:
+      return null;
+  }
+}
+
+// ─── Create next occurrence ───────────────────────────────────────────────────
+// Called async after toggle — never blocks the API response
+async function createNextOccurrence(
+  completedTask: ITask
+): Promise<void> {
+  // Only repeat tasks with a due date
+  if (
+    completedTask.repeat === "none" ||
+    !completedTask.dueDate
+  ) return;
+
+  const nextDueDate = getNextDueDate(
+    completedTask.dueDate,
+    completedTask.repeat
+  );
+
+  if (!nextDueDate) return;
+
+  // Duplicate guard — prevent creating twice if toggled rapidly
+  const existing = await TaskModel.findOne({
+    userId:    completedTask.userId,
+    listId:    completedTask.listId,
+    title:     completedTask.title,
+    repeat:    completedTask.repeat,
+    dueDate:   nextDueDate,
+    deletedAt: null,
+    completed: false,
+  });
+
+  if (existing) return;
+
+  await TaskModel.create({
+    userId:    completedTask.userId,
+    listId:    completedTask.listId,
+    title:     completedTask.title,
+    dueDate:   nextDueDate,
+    dueTime:   completedTask.dueTime,
+    repeat:    completedTask.repeat,
+    completed: false,
+    deletedAt: null,
+  });
+
+  console.log(
+    `[TaskService] Created next occurrence of "${completedTask.title}" for ${nextDueDate.toISOString().split("T")[0]}`
+  );
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 // TASK LIST OPERATIONS
 // ═════════════════════════════════════════════════════════════════════════════
 
-// ─── Create default list (called on user registration) ────────────────────────
 export async function createDefaultList(
   userId: string
 ): Promise<TaskListDTO> {
@@ -111,7 +195,6 @@ export async function createDefaultList(
     isDefault: true,
   });
 
-  // Idempotent — don't create duplicate default list
   if (existing) return serialiseList(existing);
 
   const list = await TaskListModel.create({
@@ -124,20 +207,17 @@ export async function createDefaultList(
   return serialiseList(list);
 }
 
-// ─── Get all lists for a user ─────────────────────────────────────────────────
 export async function getUserLists(
   userId: string
 ): Promise<TaskListDTO[]> {
   await connectDB();
 
   const [lists, counts] = await Promise.all([
-    // Get all lists sorted — default first, then by createdAt
     TaskListModel
       .find({ userId: toObjectId(userId) })
       .sort({ isDefault: -1, createdAt: 1 })
       .lean(),
 
-    // Aggregation — task + overdue counts per list in one query
     TaskModel.aggregate([
       {
         $match: {
@@ -154,9 +234,9 @@ export async function getUserLists(
               $cond: [
                 {
                   $and: [
-                    { $eq:  ["$completed", false] },
-                    { $lt:  ["$dueDate", new Date()] },
-                    { $ne:  ["$dueDate", null] },
+                    { $eq: ["$completed", false] },
+                    { $lt: ["$dueDate", new Date()] },
+                    { $ne: ["$dueDate", null] },
                   ],
                 },
                 1,
@@ -169,7 +249,6 @@ export async function getUserLists(
     ]),
   ]);
 
-  // Build lookup map listId → counts
   const countMap = new Map(
     counts.map((c) => [
       c._id.toString(),
@@ -182,18 +261,20 @@ export async function getUserLists(
       taskCount:    0,
       overdueCount: 0,
     };
-    return serialiseList(doc as unknown as ITaskList, c.taskCount, c.overdueCount);
+    return serialiseList(
+      doc as unknown as ITaskList,
+      c.taskCount,
+      c.overdueCount
+    );
   });
 }
 
-// ─── Create list ──────────────────────────────────────────────────────────────
 export async function createList(
   userId: string,
-  input: CreateListInput
+  input:  CreateListInput
 ): Promise<TaskListDTO> {
   await connectDB();
 
-  // Check duplicate name
   const existing = await TaskListModel.findOne({
     userId: toObjectId(userId),
     name:   { $regex: new RegExp(`^${input.name.trim()}$`, "i") },
@@ -209,11 +290,10 @@ export async function createList(
   return serialiseList(list);
 }
 
-// ─── Update list (rename / recolor) ──────────────────────────────────────────
 export async function updateList(
   userId: string,
   listId: string,
-  input: UpdateListInput
+  input:  UpdateListInput
 ): Promise<TaskListDTO> {
   await connectDB();
 
@@ -221,10 +301,8 @@ export async function updateList(
     _id:    toObjectId(listId),
     userId: toObjectId(userId),
   });
-
   if (!list) throw new Error("LIST_NOT_FOUND");
 
-  // Check duplicate name if renaming
   if (input.name && input.name.trim() !== list.name) {
     const duplicate = await TaskListModel.findOne({
       userId: toObjectId(userId),
@@ -241,7 +319,6 @@ export async function updateList(
   return serialiseList(list);
 }
 
-// ─── Delete list ──────────────────────────────────────────────────────────────
 export async function deleteList(
   userId: string,
   listId: string
@@ -252,13 +329,9 @@ export async function deleteList(
     _id:    toObjectId(listId),
     userId: toObjectId(userId),
   });
-
   if (!list) throw new Error("LIST_NOT_FOUND");
-
-  // Cannot delete default list
   if (list.isDefault) throw new Error("CANNOT_DELETE_DEFAULT");
 
-  // Check if list has active tasks
   const taskCount = await TaskModel.countDocuments({
     listId:    toObjectId(listId),
     deletedAt: null,
@@ -266,7 +339,6 @@ export async function deleteList(
   if (taskCount > 0) throw new Error("LIST_HAS_TASKS");
 
   await TaskListModel.findByIdAndDelete(toObjectId(listId));
-
   return { message: "List deleted successfully." };
 }
 
@@ -274,7 +346,6 @@ export async function deleteList(
 // TASK OPERATIONS
 // ═════════════════════════════════════════════════════════════════════════════
 
-// ─── Get all tasks for a user ─────────────────────────────────────────────────
 export async function getUserTasks(
   userId: string,
   params: TaskQueryParams = {}
@@ -288,39 +359,29 @@ export async function getUserTasks(
     search,
   } = params;
 
-  // Build query filter
   const filter: mongoose.FilterQuery<ITask> = {
     userId:    toObjectId(userId),
-    deletedAt: null,             // active tasks only by default
+    deletedAt: null,
   };
 
-  if (listId) filter.listId = toObjectId(listId);
+  if (listId)            filter.listId    = toObjectId(listId);
   if (!includeCompleted) filter.completed = false;
-
-  // Text search — FR-10
-  if (search?.trim()) {
-    filter.$text = { $search: search.trim() };
-  }
+  if (search?.trim())    filter.$text     = { $search: search.trim() };
 
   const docs = await TaskModel
     .find(filter)
     .sort({ dueDate: 1, createdAt: 1 })
     .lean();
 
-  let tasks = docs.map((doc) =>
-    serialiseTask(doc as unknown as ITask)
-  );
+  let tasks = docs.map((doc) => serialiseTask(doc as unknown as ITask));
 
-  // Client-side search fallback (for partial matches)
   if (search?.trim()) {
     tasks = searchTasks(tasks, search);
   }
 
-  // Return grouped or flat
   return grouped ? groupTasksByStatus(tasks) : tasks;
 }
 
-// ─── Get single task ──────────────────────────────────────────────────────────
 export async function getTaskById(
   userId: string,
   taskId: string
@@ -329,22 +390,19 @@ export async function getTaskById(
 
   const doc = await TaskModel.findOne({
     _id:    toObjectId(taskId),
-    userId: toObjectId(userId),   // ownership check
+    userId: toObjectId(userId),
   }).lean();
 
   if (!doc) throw new Error("TASK_NOT_FOUND");
-
   return serialiseTask(doc as unknown as ITask);
 }
 
-// ─── Create task ──────────────────────────────────────────────────────────────
 export async function createTask(
   userId: string,
-  input: CreateTaskInput
+  input:  CreateTaskInput
 ): Promise<TaskDTO> {
   await connectDB();
 
-  // Verify list belongs to user
   const list = await TaskListModel.findOne({
     _id:    toObjectId(input.listId),
     userId: toObjectId(userId),
@@ -363,22 +421,19 @@ export async function createTask(
   return serialiseTask(doc);
 }
 
-// ─── Update task ──────────────────────────────────────────────────────────────
 export async function updateTask(
   userId: string,
   taskId: string,
-  input: UpdateTaskInput
+  input:  UpdateTaskInput
 ): Promise<TaskDTO> {
   await connectDB();
 
   const doc = await TaskModel.findOne({
     _id:    toObjectId(taskId),
-    userId: toObjectId(userId),   // ownership check
+    userId: toObjectId(userId),
   });
-
   if (!doc) throw new Error("TASK_NOT_FOUND");
 
-  // If moving to different list — verify new list belongs to user
   if (input.listId && input.listId !== doc.listId.toString()) {
     const list = await TaskListModel.findOne({
       _id:    toObjectId(input.listId),
@@ -388,17 +443,17 @@ export async function updateTask(
     doc.listId = toObjectId(input.listId);
   }
 
-  if (input.title     !== undefined) doc.title   = input.title.trim();
-  if (input.dueDate   !== undefined) doc.dueDate  = parseDueDate(input.dueDate);
-  if (input.dueTime   !== undefined) doc.dueTime  = input.dueTime ?? null;
-  if (input.repeat    !== undefined) doc.repeat   = input.repeat;
+  if (input.title     !== undefined) doc.title     = input.title.trim();
+  if (input.dueDate   !== undefined) doc.dueDate   = parseDueDate(input.dueDate);
+  if (input.dueTime   !== undefined) doc.dueTime   = input.dueTime ?? null;
+  if (input.repeat    !== undefined) doc.repeat    = input.repeat;
   if (input.completed !== undefined) doc.completed = input.completed;
 
   await doc.save();
   return serialiseTask(doc);
 }
 
-// ─── Toggle complete ──────────────────────────────────────────────────────────
+// ─── Toggle complete — with auto next occurrence ──────────────────────────────
 export async function toggleTaskComplete(
   userId: string,
   taskId: string
@@ -409,16 +464,24 @@ export async function toggleTaskComplete(
     _id:    toObjectId(taskId),
     userId: toObjectId(userId),
   });
-
   if (!doc) throw new Error("TASK_NOT_FOUND");
 
-  doc.completed = !doc.completed;
+  const wasCompleted = doc.completed;
+  doc.completed      = !doc.completed;
   await doc.save();
+
+  // If just completed (not uncompleted) + has repeat frequency
+  // → create next occurrence asynchronously (non-blocking)
+  if (!wasCompleted && doc.completed && doc.repeat !== "none") {
+    createNextOccurrence(doc).catch((err) =>
+      console.error("[TaskService] Failed to create next occurrence:", err)
+    );
+  }
 
   return serialiseTask(doc);
 }
 
-// ─── Soft delete task (FR-15 undo ready) ──────────────────────────────────────
+// ─── Soft delete (FR-15) ─────────────────────────────────────────────────────
 export async function deleteTask(
   userId: string,
   taskId: string
@@ -429,14 +492,11 @@ export async function deleteTask(
     _id:    toObjectId(taskId),
     userId: toObjectId(userId),
   });
-
   if (!doc) throw new Error("TASK_NOT_FOUND");
 
-  // Soft delete — set deletedAt, don't remove from DB
   doc.deletedAt = new Date();
   await doc.save();
 
-  // Return deleted task so client can offer undo (FR-15)
   return serialiseTask(doc);
 }
 
@@ -451,7 +511,6 @@ export async function restoreTask(
     _id:    toObjectId(taskId),
     userId: toObjectId(userId),
   });
-
   if (!doc) throw new Error("TASK_NOT_FOUND");
 
   doc.deletedAt = null;
@@ -460,8 +519,7 @@ export async function restoreTask(
   return serialiseTask(doc);
 }
 
-// ─── Permanent delete (cleanup) ───────────────────────────────────────────────
-// Called after undo window expires or user explicitly purges
+// ─── Permanent delete ─────────────────────────────────────────────────────────
 export async function permanentDeleteTask(
   userId: string,
   taskId: string
@@ -472,13 +530,12 @@ export async function permanentDeleteTask(
     _id:    toObjectId(taskId),
     userId: toObjectId(userId),
   });
-
   if (!result) throw new Error("TASK_NOT_FOUND");
 
   return { message: "Task permanently deleted." };
 }
 
-// ─── Get deleted tasks (for undo list FR-15) ───────────────────────────────────
+// ─── Get deleted tasks (FR-15) ────────────────────────────────────────────────
 export async function getDeletedTasks(
   userId: string
 ): Promise<TaskDTO[]> {
