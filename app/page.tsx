@@ -34,6 +34,8 @@ export default function Page() {
     isAuthenticated,
     fetchTasks,
     fetchLists,
+    undoTask,
+    undoDelete,
   } = state;
 
   const [quickAddOpen, setQuickAddOpen] = useState(false);
@@ -45,7 +47,9 @@ export default function Page() {
   }, []);
 
   const showLocalToastRef = useRef(showLocalToast);
-  showLocalToastRef.current = showLocalToast;
+  useEffect(() => {
+    showLocalToastRef.current = showLocalToast;
+  }, [showLocalToast]);
 
   const { isOnline, isSyncing, pendingCount } = useOfflineSync(
     useCallback(() => {
@@ -119,7 +123,12 @@ export default function Page() {
     [showLocalToast, fetchTasks],
   );
 
-  const stateWithCdf = { ...state, cdfEnabled, onCdfEvent: handleCdfEvent };
+  const stateWithCdf = {
+    ...state,
+    tasks: state.tasks as TaskDTO[],
+    cdfEnabled,
+    onCdfEvent: handleCdfEvent,
+  };
 
   if (isLoading) {
     return (
@@ -295,7 +304,17 @@ export default function Page() {
       />
 
       {/* ── Toast ────────────────────────────────────────────────────── */}
-      <Toast message={toastMsg ?? toast} />
+      <Toast
+        message={toastMsg ?? toast}
+        action={
+          undoTask
+            ? {
+                label: "Undo",
+                onClick: undoDelete,
+              }
+            : undefined
+        }
+      />
     </div>
   );
 }

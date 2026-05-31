@@ -40,7 +40,8 @@ export function useAuthenticatedApp() {
     isLoadingData: appClient.isLoading,
     error: appClient.error,
     updateList: appClient.updateList,
-    
+    undoTask:   appClient.undoTask,
+    undoDelete: appClient.undoDelete,
     // Auth actions
     login: auth.login,
     register: auth.register,

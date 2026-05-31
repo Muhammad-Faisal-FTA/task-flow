@@ -149,6 +149,7 @@ export const taskApi = {
     const response = await api.patch<ApiResponse<TaskDTO>>(`/api/tasks/${taskId}`, { restore: true });
     return response.data.data;
   },
+
 };
 
 // ─── List API ───────────────────────────────────────────────────────────────────
@@ -184,12 +185,6 @@ export const listApi = {
   async updateList(listId: string, data: UpdateListInput): Promise<TaskListDTO> {
     const response = await api.patch<ApiResponse<TaskListDTO>>(`/api/lists/${listId}`, data);
     return response.data.data;
-  },
-
-  // __In services/apiService.ts — inside listApi object
-  updateList: async (id: string, data: { name?: string; color?: string }) => {
-    const res = await api.patch(`/api/lists/${id}`, data);
-    return res.data.data as TaskListDTO;
   },
 
   /**
