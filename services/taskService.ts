@@ -1,6 +1,6 @@
 // services/taskService.ts
 
-import mongoose from "mongoose";
+import mongoose, { type FilterQuery } from "mongoose";
 import { connectDB }       from "@/lib/mongoose";
 import { TaskModel }       from "@/models/task.model";
 import { TaskListModel }   from "@/models/taskList.model";
@@ -46,6 +46,11 @@ function serialiseTask(doc: ITask): TaskDTO {
     dueDate:     formatDueDate(doc.dueDate),
     dueTime:     doc.dueTime ?? null,
     repeat:      doc.repeat,
+    links: (doc.links ?? []).map(l => ({
+      id:   l.id,
+      name: l.name,
+      url:  l.url,
+    })),
     status:      deriveStatus(doc.dueDate, doc.completed, doc.deletedAt),
     deletedAt:   doc.deletedAt ? doc.deletedAt.toISOString() : null,
     createdAt:   doc.createdAt.toISOString(),
@@ -172,6 +177,7 @@ async function createNextOccurrence(
     dueDate:   nextDueDate,
     dueTime:   completedTask.dueTime,
     repeat:    completedTask.repeat,
+    links:     completedTask.links ?? [],
     completed: false,
     deletedAt: null,
   });
@@ -447,6 +453,7 @@ export async function updateTask(
   if (input.dueDate   !== undefined) doc.dueDate   = parseDueDate(input.dueDate);
   if (input.dueTime   !== undefined) doc.dueTime   = input.dueTime ?? null;
   if (input.repeat    !== undefined) doc.repeat    = input.repeat;
+  if (input.links !== undefined) doc.links = input.links;
   if (input.completed !== undefined) doc.completed = input.completed;
 
   await doc.save();

@@ -23,6 +23,7 @@ function taskDtoToUi(dto: TaskDTO): Task {
     repeat:        dto.repeat,
     status:        dto.status,        // ← keep exact status from API
     hasRepeatIcon: dto.repeat !== "none",
+    links:         dto.links??[],         // ← pass through links from API
   };
 }
 
@@ -202,6 +203,7 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
       repeat:        "none",
       status:        "nodate",
       hasRepeatIcon: false,
+      links:         [],
     });
     navigate("detail");
   }, [lists, navigate]);

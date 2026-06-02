@@ -45,6 +45,7 @@ export interface ITask {
   deletedAt: Date | null;        // null = active, Date = soft deleted (FR-15)
   createdAt: Date;
   updatedAt: Date;
+  links: TaskLink[];          // FR-11 — array of links attached to task (empty if none)
 }
 
 // ─── API response shapes (safe — no Mongoose internals) ──────────────────────
@@ -64,6 +65,7 @@ export interface TaskDTO {
   deletedAt: string | null;      // ISO string — for undo (FR-15)
   createdAt: string;
   updatedAt: string;
+  links: TaskLink[];        // FR-11 — array of links attached to task (empty if none)
 }
 
 // Single list returned to client
@@ -96,6 +98,7 @@ export interface CreateTaskInput {
   dueDate?: string | null;       // "YYYY-MM-DD"
   dueTime?: string | null;       // "HH:MM"
   repeat?: RepeatFrequency;
+  links?: TaskLink[];           // FR-11 — optional array of links to attach to task
 }
 
 export interface UpdateTaskInput {
@@ -107,6 +110,7 @@ export interface UpdateTaskInput {
   completed?: boolean;
   toggle?: boolean;
   restore?: boolean;
+  links?: TaskLink[];          // FR-11 — optional array of links to replace existing ones
 }
 
 export interface CreateListInput {
@@ -127,3 +131,11 @@ export interface TaskQueryParams {
   includeDeleted?: boolean;      // include soft-deleted (for undo)
   search?: string;               // FR-10 — search by title
 }
+
+// ─── Task link ────────────────────────────────────────────────────────────────
+export interface TaskLink {
+  id:   string;    // client-generated UUID
+  name: string;    // display name e.g. "Design Doc"
+  url:  string;    // full URL e.g. "https://..."
+}
+
