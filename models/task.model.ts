@@ -76,7 +76,19 @@ const TaskSchema = new Schema<ITask>(
       default: null,
       index:   true,             // NFR Performance — filter active vs deleted
     },
+
+    links: {
+      type: [
+        {
+          id:   { type: String, required: true },
+          name: { type: String, required: true, trim: true, maxlength: 100 },
+          url:  { type: String, required: true, trim: true, maxlength: 2048 },
+        },
+      ],
+      default: [],
+    },
   },
+  
   {
     timestamps: true,
     versionKey: false,
@@ -125,12 +137,14 @@ TaskSchema.pre("save", async function () {
 
 // ─── Sanitize toJSON ──────────────────────────────────────────────────────────
 TaskSchema.set("toJSON", {
-  transform(_doc, ret) {
+  transform(_doc, ret: any) {
     ret.id = ret._id.toString();
     delete ret._id;
     return ret;
   },
 });
+
+
 
 // ─── Model guard ──────────────────────────────────────────────────────────────
 export const TaskModel: Model<ITask> =
