@@ -1,14 +1,16 @@
 // services/notificationService.ts
 import mongoose           from "mongoose";
+import * as webpush        from "web-push";
 import { connectDB }      from "@/lib/mongoose";
 import { TaskModel }      from "@/models/task.model";
-import { PushSubscriptionModel } from "@/models/pushSubscription.model";
-import {
-  sendPushNotification,
-  type PushSubscriptionData,
-  type PushPayload,
-} from "@/lib/webpush";
-import type { IPushSubscription } from "@/models/pushSubscription.model";
+// import "@/models/pushSubscription.model";
+import { PushPayload, PushSubscriptionData } from "@/lib/webpush";
+
+const PushSubscriptionModel = mongoose.models.PushSubscription as mongoose.Model<any>;
+
+type PushNotificationResult =
+  | { success: true }
+  | { success: false; error: "SUBSCRIPTION_EXPIRED" | "SEND_ERROR" };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function toObjectId(id: string): mongoose.Types.ObjectId {
@@ -138,4 +140,21 @@ export async function sendAtTimeReminders(
 
   console.log(`[Notifications] Sent: ${sent} Failed: ${failed} Skipped: ${skipped}`);
   return { sent, failed, skipped };
+}
+
+async function sendPushNotification(
+  subData: PushSubscriptionData,
+  payload: PushPayload
+): Promise<PushNotificationResult> {
+  try {
+    await webpush.sendNotification(subData as any, JSON.stringify(payload));
+    return { success: true };
+  } catch (error: any) {
+    if (error?.statusCode === 410 || error?.statusCode === 404) {
+      return { success: false, error: "SUBSCRIPTION_EXPIRED" };
+    }
+
+    console.error("[Notifications] Push send failed", error);
+    return { success: false, error: "SEND_ERROR" };
+  }
 }

@@ -10,10 +10,10 @@ import { SearchBar } from "@/components/task/SearchBar";
 import { SearchResults } from "@/components/task/SearchResults";
 import { useTaskToggle } from "@/hooks/useTaskToggle";
 import { useSearch } from "@/hooks/useSearch";
-import { NotificationBanner } from "@/components/ui/NotificationBanner";
 import type { TaskDTO, TaskListDTO } from "@/types/task";
 import type { CdfEventDTO } from "@/types/cdf";
 import type { Screen } from "@/types";
+import { NotificationBanner } from "@/hooks/NotificationBanner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface HomeScreenState {

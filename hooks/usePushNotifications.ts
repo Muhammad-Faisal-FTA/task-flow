@@ -72,9 +72,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
 
       const subscription = await reg.pushManager.subscribe({
         userVisibleOnly:      true,
-        // TS expects a BufferSource (ArrayBuffer or ArrayBufferView with ArrayBuffer
-        // backing it). Cast to unknown then to BufferSource to satisfy strict libs
-        applicationServerKey: urlBase64ToUint8Array(vapidKey) as unknown as BufferSource,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey),
       });
 
       // 4. Send subscription to server

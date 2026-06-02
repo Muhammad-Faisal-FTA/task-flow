@@ -16,9 +16,14 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { SelectField } from "@/components/ui/SelectField";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { TimePicker } from "@/components/ui/TimePicker";
+import { LinksSection } from "@/components/task/LinksSection";
+
 import { cn } from "@/lib/cn";
 import { REPEAT_OPTIONS } from "@/lib/data";
 import type { Task, TaskList } from "@/types";
+import { TaskLink } from "@/types/task";
+
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface DetailScreenState {
@@ -150,6 +155,8 @@ export function DetailScreen({ state }: DetailScreenProps) {
         dueDate: form.dueDate,
         dueTime: form.dueTime,
         repeat: form.repeat,
+        links:     form.links ?? [],     // ← add this
+
       });
     } finally {
       setIsSaving(false);
@@ -451,7 +458,11 @@ export function DetailScreen({ state }: DetailScreenProps) {
             dotColor={selectedList?.color}
           />
         </div>
-      </div>
+        <LinksSection
+          links={form.links ?? []}
+          onChange={(val: TaskLink[]) => update("links", val)}
+          />
+        </div>
       {/* ── Save button — sticky at bottom of flex column ───────────── */}
       {/* ↓ NOT fixed — works correctly in both mobile panel + desktop  */}
       <div
