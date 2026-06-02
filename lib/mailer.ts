@@ -9,13 +9,19 @@ const {
   SMTP_USER,
   SMTP_PASS,
   SMTP_FROM,
-  APP_URL,
+  // APP_URL,
 } = process.env;
 
-if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS || !SMTP_FROM || !APP_URL) {
+const baseUrl = process.env.APP_URL || 
+  (process.env.VERCEL_URL 
+    ? `https://${process.env.VERCEL_URL}` 
+    : "http://localhost:3000");
+
+
+if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS || !SMTP_FROM || !baseUrl) {
   throw new Error(
     "Missing mailer env vars in .env.local:\n" +
-    "SMTP_HOST=\nSMTP_PORT=\nSMTP_USER=\nSMTP_PASS=\nSMTP_FROM=\nAPP_URL="
+    "SMTP_HOST=\nSMTP_PORT=\nSMTP_USER=\nSMTP_PASS=\nSMTP_FROM=\nbaseUrl="
   );
 }
 
@@ -174,7 +180,7 @@ export async function sendVerificationEmail(
   name: string,
   token: string
 ): Promise<void> {
-  const verifyUrl = `${APP_URL}/verify-email?token=${token}`;
+  const verifyUrl = `${baseUrl}/verify-email?token=${token}`;
 
   const body = `
     <h2 style="margin: 0 0 8px; font-size: 20px; color: #FFFFFF; font-weight: 600;">
@@ -209,7 +215,7 @@ export async function sendPasswordResetEmail(
   name: string,
   token: string
 ): Promise<void> {
-  const resetUrl = `${APP_URL}/reset-password?token=${token}`;
+  const resetUrl = `${baseUrl}/reset-password?token=${token}`;
 
   const body = `
     <h2 style="margin: 0 0 8px; font-size: 20px; color: #FFFFFF; font-weight: 600;">
