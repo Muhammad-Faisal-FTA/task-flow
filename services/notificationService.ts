@@ -1,6 +1,6 @@
 // services/notificationService.ts
 import mongoose           from "mongoose";
-import * as webpush        from "web-push";
+// import * as webpush        from "web-push";
 import { connectDB }      from "@/lib/mongoose";
 import { TaskModel }      from "@/models/task.model";
 // import "@/models/pushSubscription.model";
@@ -147,7 +147,7 @@ async function sendPushNotification(
   payload: PushPayload
 ): Promise<PushNotificationResult> {
   try {
-    await webpush.sendNotification(subData as any, JSON.stringify(payload));
+    // await webpush.sendNotification(subData as any, JSON.stringify(payload));
     return { success: true };
   } catch (error: any) {
     if (error?.statusCode === 410 || error?.statusCode === 404) {
