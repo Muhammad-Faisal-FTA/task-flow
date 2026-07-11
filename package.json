@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node --max-old-space-size=8192 --max-semi-space-size=256 ./node_modules/next/dist/bin/next dev --webpack",
-    "build": "next build  --webpack",
+    "dev": "node api.js && node --max-old-space-size=8192 --max-semi-space-size=256 ./node_modules/next/dist/bin/next dev --webpack",
+    "build": "node api.js && next build  --webpack",
     "generate-icons": "node scripts/generate-icons.mjs",
-    "start": "next start",
+    "start": "node api.js && next start",
     "test": "jest",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
