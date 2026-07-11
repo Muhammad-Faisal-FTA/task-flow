@@ -37,7 +37,6 @@ export function useAuthenticatedApp() {
     selectedTask: appClient.selectedTask,
     setSelectedTask: appClient.setSelectedTask,
     toast: appClient.toast,
-    isLoadingData: appClient.isLoading,
     error: appClient.error,
     updateList: appClient.updateList,
     undoTask:   appClient.undoTask,
@@ -66,6 +65,10 @@ export function useAuthenticatedApp() {
     fetchTasks: appClient.fetchTasks,
     fetchLists: appClient.fetchLists,
     refreshAll: appClient.refreshAll,
+
+    // Cache indicator props
+    isFromCache:  appClient.isFromCache,
+    isLoadingData: appClient.isLoading,
   }), [auth, appClient]);
   
   return state;
