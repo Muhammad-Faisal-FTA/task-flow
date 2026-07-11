@@ -41,6 +41,7 @@ export async function connectDB(): Promise<Mongoose> {
       maxPoolSize: 10,       // Up to 10 concurrent DB operations
       serverSelectionTimeoutMS: 5000, // Fail after 5s if Atlas unreachable
       socketTimeoutMS: 45000,         // Close idle sockets after 45s
+
     });
   }
 

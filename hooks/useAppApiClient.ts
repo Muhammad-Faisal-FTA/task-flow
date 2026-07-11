@@ -2,6 +2,14 @@
 "use client";
 import { useState, useCallback, useEffect } from "react";
 import { taskApi, listApi, setTokenGetter } from "@/services/apiService";
+import {
+  cacheTasks,
+  cacheLists,
+  getCachedTasks,
+  getCachedLists,
+  getCacheAge,
+} from "@/lib/taskCache";
+
 import type {
   TaskDTO,
   TaskListDTO,
@@ -62,7 +70,8 @@ export function useAppApiClient(
   useEffect(() => {
     setTokenGetter(getAccessToken);
   }, [getAccessToken]);
-
+  
+  const [isFromCache, setIsFromCache] = useState(false);
   const [screen, setScreen]               = useState<"home" | "detail" | "lists">("home");
   const [screenHistory, setScreenHistory] = useState<("home" | "detail" | "lists")[]>([]);
   const [tasks,    setTasks]              = useState<Task[]>([]);
@@ -85,46 +94,77 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
 
   // ── Fetch tasks ────────────────────────────────────────────────────────────
   const fetchTasks = useCallback(async (params?: { listId?: string }) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await taskApi.getTasks({
-        listId:           params?.listId ?? filterListId ?? undefined,
-        grouped:          true,
-        includeCompleted: false,   // FR-04 — hide completed
-      });
+    // setIsLoading(true);
+    // setError(null);
+    if (typeof window !== "undefined") {
+    const cached = await getCachedTasks();
+    if (cached.length > 0) {
+      setTasks(cached.map(taskDtoToUi));
+      setIsFromCache(true);
+      setIsLoading(false);    // show UI immediately
+    } else {
+      setIsLoading(true);     // no cache — show spinner
+    }
+  }
+    // Step 2 — Fetch fresh from API in background
+  setError(null);
+  try {
+    const data = await taskApi.getTasks({
+      listId:           params?.listId ?? filterListId ?? undefined,
+      grouped:          true,
+      includeCompleted: false,
+    });
 
-      // Always flatten to Task[] for local state
-      // Status is preserved from API — deriveStatus already ran server-side
-      const dtos: TaskDTO[] = isGroupedTasks(data)
-        ? flattenGrouped(data)
-        : data;
+    const dtos: TaskDTO[] = isGroupedTasks(data)
+      ? flattenGrouped(data)
+      : data;
 
-      setTasks(dtos.map(taskDtoToUi));
+    setTasks(dtos.map(taskDtoToUi));
+    setIsFromCache(false);
+
+        await cacheTasks(dtos);
+
     } catch (err) {
       const e = err as { message?: string };
+    // Only set error if we have no cached data to show
+    if (tasks.length === 0) {
       setError(e.message ?? "Failed to fetch tasks");
-      console.error("[fetchTasks]", err);
-    } finally {
-      setIsLoading(false);
     }
-  }, [filterListId]);
+    console.error("[fetchTasks]", err);
+    } finally {
+    setIsLoading(false);
+  }
+}, [filterListId, tasks.length]);
+
 
   // ── Fetch lists ────────────────────────────────────────────────────────────
   const fetchLists = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await listApi.getLists();
-      setLists(data.map(listDtoToUi));
-    } catch (err) {
-      const e = err as { message?: string };
+    //  Step 1 — Load from IndexedDB instantly
+  if (typeof window !== "undefined") {
+    const cached = await getCachedLists();
+    if (cached.length > 0) {
+      setLists(cached.map(listDtoToUi));
+    }
+  }
+    // Step 2 — Fetch fresh in background
+  setError(null);
+  try {
+    const data = await listApi.getLists();
+    setLists(data.map(listDtoToUi));
+    await cacheLists(data);   // update cache
+  } catch (err) {
+    const e = err as { message?: string };
+    if (lists.length === 0) {
       setError(e.message ?? "Failed to fetch lists");
-      console.error("[fetchLists]", err);
-    } finally {
+    }
+    console.error("[fetchLists]", err);
+
+  }finally {
       setIsLoading(false);
     }
-  }, []);
+}, [lists.length])
+ 
+ 
 
   const refreshAll = useCallback(async () => {
     await Promise.all([fetchTasks(), fetchLists()]);
@@ -388,6 +428,8 @@ const updateList = useCallback(async (
     fetchLists,
     refreshAll,
     updateList,  // ← new API-integrated list update
+    isFromCache, // ← indicates if tasks are from cache (for UI hints) 
+
   };
 }
 

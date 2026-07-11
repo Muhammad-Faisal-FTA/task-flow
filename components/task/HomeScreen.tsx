@@ -14,6 +14,8 @@ import type { TaskDTO, TaskListDTO } from "@/types/task";
 import type { CdfEventDTO } from "@/types/cdf";
 import type { Screen } from "@/types";
 import { NotificationBanner } from "@/hooks/NotificationBanner";
+import { CacheIndicator } from "@/components/ui/CacheIndicator";
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface HomeScreenState {
@@ -27,6 +29,8 @@ interface HomeScreenState {
   showToast?: (msg: string) => void;
   cdfEnabled?: boolean;
   onCdfEvent?: (event: CdfEventDTO, taskTitle: string) => void;
+  isFromCache?:  boolean;
+  isLoadingData?: boolean;
 }
 
 // ─── Section config ───────────────────────────────────────────────────────────
@@ -150,6 +154,8 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
               aria-label={searchOpen ? "Close search" : "Search tasks"}
             >
               <NotificationBanner />
+
+
               <Search
                 className="w-4 h-4"
                 style={{
@@ -171,7 +177,10 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
           </div>
         }
       />
-
+       <CacheIndicator
+        isFromCache={state.isFromCache ?? false}
+        isLoading={state.isLoadingData ?? false}
+        />
       {/* ── Search bar ────────────────────────────────────────────────── */}
       <SearchBar
         open={searchOpen}
