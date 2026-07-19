@@ -58,6 +58,20 @@ const withPWA = withPWAInit({
       },
     },
 
+    // App shell / navigation pages — offline-first
+    {
+      urlPattern: ({ request }) => request.mode === "navigate",
+      handler: "NetworkFirst",
+      options: {
+        cacheName: "pages-cache",
+        networkTimeoutSeconds: 10,
+        expiration: {
+          maxEntries: 50,
+          maxAgeSeconds: 24 * 60 * 60,
+        },
+      },
+    },
+
     // All other pages — network first, 24h cache
     {
       urlPattern: /^https?.*$/,
