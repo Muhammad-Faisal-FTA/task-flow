@@ -1,5 +1,5 @@
 {
-  "name": "my-project",
+  "name": "TaskFlow",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -20,6 +20,7 @@
     "dotenv": "^17.3.1",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.7.0",
+    "mongodb": "3.7",
     "mongoose": "^9.3.2",
     "next": "16.2.1",
     "next-pwa": "^5.6.0",

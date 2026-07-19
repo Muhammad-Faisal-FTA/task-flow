@@ -1,12 +1,15 @@
 // lib/taskCache.ts
 // Lightweight IndexedDB wrapper for task + list caching
 
+import type { PendingAction } from "@/lib/offlineActions";
+
 const DB_NAME    = "taskflow-cache";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORES     = {
   tasks: "tasks",
   lists: "lists",
   meta:  "meta",
+  queue: "queue",
 } as const;
 
 // ─── Open DB ──────────────────────────────────────────────────────────────────
@@ -30,6 +33,11 @@ function openDB(): Promise<IDBDatabase> {
       // Meta store — for timestamps etc
       if (!db.objectStoreNames.contains(STORES.meta)) {
         db.createObjectStore(STORES.meta);
+      }
+
+      // Queue store — pending offline actions
+      if (!db.objectStoreNames.contains(STORES.queue)) {
+        db.createObjectStore(STORES.queue, { keyPath: "id" });
       }
     };
 
@@ -167,8 +175,42 @@ export async function clearCache(): Promise<void> {
     await Promise.all([
       txPutAll(db, STORES.tasks, []),
       txPutAll(db, STORES.lists, []),
+      txPutAll(db, STORES.queue, []),
     ]);
   } catch (err) {
     console.warn("[taskCache] Failed to clear cache:", err);
+  }
+}
+
+export async function enqueuePendingAction(action: PendingAction): Promise<void> {
+  try {
+    const db = await openDB();
+    await txPut(db, STORES.queue, action.id, action);
+  } catch (err) {
+    console.warn("[taskCache] Failed to enqueue pending action:", err);
+  }
+}
+
+export async function getPendingActions(): Promise<PendingAction[]> {
+  try {
+    const db = await openDB();
+    return await txGetAll<PendingAction>(db, STORES.queue);
+  } catch (err) {
+    console.warn("[taskCache] Failed to load pending actions:", err);
+    return [];
+  }
+}
+
+export async function removePendingAction(id: string): Promise<void> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORES.queue, "readwrite");
+    tx.objectStore(STORES.queue).delete(id);
+    await new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (err) {
+    console.warn("[taskCache] Failed to remove pending action:", err);
   }
 }

@@ -37,4 +37,11 @@ export interface TaskList {
   overdueCount: number;
 }
 // ─── UI TaskSection type ─────────────────────────────────────────────────────
-updateList: (id: string, data: { name?: string; color?: string }) => void;
+export interface TaskSection {
+  title: string;
+  tasks: Task[];
+}
+
+export interface AppState {
+  updateList: (id: string, data: { name?: string; color?: string }) => void;
+}

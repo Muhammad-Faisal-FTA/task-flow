@@ -143,6 +143,7 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
         title="✓ All Tasks"
         rightAction={
           <div className="flex items-center gap-2">
+            <NotificationBanner />
             <button
               onClick={searchOpen ? handleCloseSearch : handleOpenSearch}
               className="w-9 h-9 flex items-center justify-center rounded-[8px] active:scale-90 transition-all duration-200"
@@ -153,7 +154,6 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
               }}
               aria-label={searchOpen ? "Close search" : "Search tasks"}
             >
-              <NotificationBanner />
 
 
               <Search

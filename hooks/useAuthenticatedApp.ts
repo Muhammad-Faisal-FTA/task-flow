@@ -69,6 +69,7 @@ export function useAuthenticatedApp() {
     // Cache indicator props
     isFromCache:  appClient.isFromCache,
     isLoadingData: appClient.isLoading,
+    offlinePendingCount: appClient.offlinePendingCount,
   }), [auth, appClient]);
   
   return state;

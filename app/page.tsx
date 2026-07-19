@@ -36,6 +36,7 @@ export default function Page() {
     fetchLists,
     undoTask,
     undoDelete,
+    offlinePendingCount,
   } = state;
 
   const [quickAddOpen, setQuickAddOpen] = useState(false);
@@ -157,7 +158,7 @@ export default function Page() {
       <OfflineBanner
         isOnline={isOnline}
         isSyncing={isSyncing}
-        pendingCount={pendingCount}
+        pendingCount={pendingCount + offlinePendingCount}
       />
 
       {/* ── DESKTOP: Sidebar ──────────────────────────────────────────── */}

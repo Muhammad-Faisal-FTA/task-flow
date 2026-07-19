@@ -96,7 +96,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         }),
       });
 
-      if (!res.ok) throw new Error("Failed to save subscription");
+      if (!res.ok) throw new Error("Failed to save subscription:" + (await res.text()));
 
       setIsSubscribed(true);
     } catch (err) {
