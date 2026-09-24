@@ -1,160 +1,26 @@
-// services/notificationService.ts
-import mongoose           from "mongoose";
-// import * as webpush        from "web-push";
-import { connectDB }      from "@/lib/mongoose";
-import { TaskModel }      from "@/models/task.model";
-// import "@/models/pushSubscription.model";
-import { PushPayload, PushSubscriptionData } from "@/lib/webpush";
+import { and, eq, gte, isNotNull, isNull, lt } from "drizzle-orm";
+import { db } from "@/db";
+import { pushSubscriptions, tasks } from "@/db/schema";
+import { type PushPayload, type PushSubscriptionData, sendPushNotification } from "@/lib/webpush";
 
-const PushSubscriptionModel = mongoose.models.PushSubscription as mongoose.Model<any>;
-
-type PushNotificationResult =
-  | { success: true }
-  | { success: false; error: "SUBSCRIPTION_EXPIRED" | "SEND_ERROR" };
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function toObjectId(id: string): mongoose.Types.ObjectId {
-  return new mongoose.Types.ObjectId(id);
+export async function saveSubscription(userId: string, sub: PushSubscriptionData, userAgent?: string): Promise<void> {
+  await db.insert(pushSubscriptions).values({ userId, endpoint: sub.endpoint, p256dh: sub.keys.p256dh, auth: sub.keys.auth, userAgent }).onConflictDoUpdate({ target: pushSubscriptions.endpoint, set: { userId, p256dh: sub.keys.p256dh, auth: sub.keys.auth, userAgent, updatedAt: new Date() } });
 }
-
-// ─── Save subscription ────────────────────────────────────────────────────────
-export async function saveSubscription(
-  userId:       string,
-  subscription: PushSubscriptionData,
-  userAgent?:   string
-): Promise<void> {
-  await connectDB();
-
-  await PushSubscriptionModel.findOneAndUpdate(
-    { endpoint: subscription.endpoint },
-    {
-      $set: {
-        userId:    toObjectId(userId),
-        endpoint:  subscription.endpoint,
-        keys:      subscription.keys,
-        userAgent: userAgent ?? null,
-      },
-    },
-    { upsert: true, new: true }
-  );
-}
-
-// ─── Remove subscription ──────────────────────────────────────────────────────
-export async function removeSubscription(
-  userId:   string,
-  endpoint: string
-): Promise<void> {
-  await connectDB();
-  await PushSubscriptionModel.deleteOne({
-    userId:   toObjectId(userId),
-    endpoint,
-  });
-}
-
-// ─── Remove expired subscription ─────────────────────────────────────────────
-async function removeExpiredSubscription(endpoint: string): Promise<void> {
-  await PushSubscriptionModel.deleteOne({ endpoint });
-  console.log(`[Notifications] Removed expired subscription: ${endpoint}`);
-}
-
-// ─── Send at-time reminders ───────────────────────────────────────────────────
-// Called by cron every minute (or whatever interval you configure)
-// Finds tasks due within the next [windowMinutes] minutes and sends pushes
-export async function sendAtTimeReminders(
-  windowMinutes = 5
-): Promise<{ sent: number; failed: number; skipped: number }> {
-  await connectDB();
-
-  const now     = new Date();
-  const windowEnd = new Date(now.getTime() + windowMinutes * 60 * 1000);
-
-  // Build today's date string "YYYY-MM-DD"
-  const todayStr = now.toISOString().split("T")[0];
-
-  // Find all active tasks with dueDate=today, dueTime set, not completed
-  const tasks = await TaskModel
-    .find({
-      dueDate:   {
-        $gte: new Date(todayStr + "T00:00:00.000Z"),
-        $lt:  new Date(todayStr + "T23:59:59.999Z"),
-      },
-      dueTime:   { $ne: null },
-      completed: false,
-      deletedAt: null,
-    })
-    .lean();
-
+export async function removeSubscription(userId: string, endpoint: string): Promise<void> { await db.delete(pushSubscriptions).where(and(eq(pushSubscriptions.userId, userId), eq(pushSubscriptions.endpoint, endpoint))); }
+export async function sendAtTimeReminders(windowMinutes = 5) {
+  const now = new Date(), end = new Date(now.getTime() + windowMinutes * 60_000), day = new Date(now); day.setHours(0, 0, 0, 0); const tomorrow = new Date(day); tomorrow.setDate(day.getDate() + 1);
+  const due = await db.select().from(tasks).where(and(gte(tasks.dueDate, day), lt(tasks.dueDate, tomorrow), isNotNull(tasks.dueTime), eq(tasks.completed, false), isNull(tasks.deletedAt)));
   let sent = 0, failed = 0, skipped = 0;
-
-  for (const task of tasks) {
-    // Parse task due datetime in local terms using dueTime "HH:MM"
-    const [hours, minutes] = (task.dueTime as string).split(":").map(Number);
-    const taskDueAt = new Date(todayStr);
-    taskDueAt.setHours(hours, minutes, 0, 0);
-
-    // Check if task is due within window
-    if (taskDueAt < now || taskDueAt > windowEnd) {
-      skipped++;
-      continue;
+  for (const task of due) {
+    const [h, m] = task.dueTime!.split(":").map(Number), at = new Date(day); at.setHours(h, m);
+    if (at < now || at > end) { skipped++; continue; }
+    const subs = await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, task.userId));
+    for (const sub of subs) {
+      const payload: PushPayload = { title: "Task Due Now", body: task.title, icon: "/icons/icon-192x192.png", badge: "/icons/icon-72x72.png", url: "/", taskId: task.id };
+      const result = await sendPushNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, payload);
+      if (result.success) sent++; else if (result.error === "SUBSCRIPTION_EXPIRED") { await db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, sub.id)); skipped++; } else failed++;
     }
-
-    // Get all push subscriptions for this user
-    const subscriptions = await PushSubscriptionModel
-      .find({ userId: task.userId })
-      .lean();
-
-    if (subscriptions.length === 0) {
-      skipped++;
-      continue;
-    }
-
-    // Build notification payload
-    const payload: PushPayload = {
-      title:  "⏰ Task Due Now",
-      body:   task.title,
-      icon:   "/icons/icon-192x192.png",
-      badge:  "/icons/icon-72x72.png",
-      url:    "/",
-      taskId: task._id.toString(),
-    };
-
-    // Send to all devices for this user
-    for (const sub of subscriptions) {
-      const subData: PushSubscriptionData = {
-        endpoint: sub.endpoint,
-        keys:     sub.keys,
-      };
-
-      const result = await sendPushNotification(subData, payload);
-
-      if (result.success) {
-        sent++;
-      } else if (result.error === "SUBSCRIPTION_EXPIRED") {
-        await removeExpiredSubscription(sub.endpoint);
-        skipped++;
-      } else {
-        failed++;
-      }
-    }
+    if (!subs.length) skipped++;
   }
-
-  console.log(`[Notifications] Sent: ${sent} Failed: ${failed} Skipped: ${skipped}`);
   return { sent, failed, skipped };
-}
-
-async function sendPushNotification(
-  subData: PushSubscriptionData,
-  payload: PushPayload
-): Promise<PushNotificationResult> {
-  try {
-    // await webpush.sendNotification(subData as any, JSON.stringify(payload));
-    return { success: true };
-  } catch (error: any) {
-    if (error?.statusCode === 410 || error?.statusCode === 404) {
-      return { success: false, error: "SUBSCRIPTION_EXPIRED" };
-    }
-
-    console.error("[Notifications] Push send failed", error);
-    return { success: false, error: "SEND_ERROR" };
-  }
 }

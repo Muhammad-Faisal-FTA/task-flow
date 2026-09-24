@@ -22,6 +22,8 @@ export interface Task {
   completed:     boolean;
   dueDate:       string | null;   // "YYYY-MM-DD"
   dueTime:       string | null;   // "HH:MM"
+  startTime?:    string | null;   // "HH:MM" — optional timeline start
+  endTime?:      string | null;   // "HH:MM" — optional timeline end
   repeat:        "none" | "daily" | "weekdays" | "weekly" | "monthly" | "yearly";
   status:        "overdue" | "today" | "tomorrow" | "next_week" | "future" | "nodate";
   hasRepeatIcon: boolean;

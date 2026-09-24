@@ -2,6 +2,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { taskApi } from "@/services/apiService";
+import {
+  getPendingActions,
+  removePendingAction,
+} from "@/lib/taskCache";
 
 interface UseOfflineSyncReturn {
   isOnline:    boolean;
@@ -19,16 +24,52 @@ export function useOfflineSync(
   // ── Count pending queue items ─────────────────────────────────────────────
   const countPending = useCallback(async () => {
     try {
-      const request = indexedDB.open("taskflow-queue", 1);
-      request.onsuccess = e => {
-        const db  = (e.target as IDBOpenDBRequest).result;
-        if (!db.objectStoreNames.contains("pending-requests")) return;
-        const tx  = db.transaction("pending-requests", "readonly");
-        const cnt = tx.objectStore("pending-requests").count();
-        cnt.onsuccess = () => setPendingCount(cnt.result);
-      };
+      setPendingCount((await getPendingActions()).length);
     } catch { /* ignore */ }
   }, []);
+
+  const syncPendingActions = useCallback(async () => {
+    const actions = (await getPendingActions()).sort(
+      (left, right) => left.createdAt - right.createdAt,
+    );
+    if (actions.length === 0) return;
+
+    setIsSyncing(true);
+    const syncedIds = new Map<string, string>();
+    for (const action of actions) {
+      try {
+        if (action.type === "create-task") {
+          const created = await taskApi.createTask({
+            title: String(action.payload.title ?? ""),
+            listId: String(action.payload.listId ?? ""),
+            dueDate: (action.payload.dueDate as string | null | undefined) ?? null,
+            dueTime: (action.payload.dueTime as string | null | undefined) ?? null,
+            repeat: action.payload.repeat as "none" | "daily" | "weekdays" | "weekly" | "monthly" | "yearly" | undefined,
+          });
+          if (action.entityId) syncedIds.set(action.entityId, created.id);
+        } else if (action.type === "update-task" && action.entityId) {
+          const taskId = syncedIds.get(action.entityId) ?? action.entityId;
+          await taskApi.updateTask(taskId, {
+            title: String(action.payload.title ?? ""),
+            listId: String(action.payload.listId ?? ""),
+            dueDate: (action.payload.dueDate as string | null | undefined) ?? null,
+            dueTime: (action.payload.dueTime as string | null | undefined) ?? null,
+            repeat: action.payload.repeat as "none" | "daily" | "weekdays" | "weekly" | "monthly" | "yearly" | undefined,
+            completed: Boolean(action.payload.completed),
+          });
+        } else {
+          continue;
+        }
+        await removePendingAction(action.id);
+      } catch {
+        // Keep failed actions queued for the next online attempt.
+      }
+    }
+
+    await countPending();
+    setIsSyncing(false);
+    onSyncComplete?.();
+  }, [countPending, onSyncComplete]);
 
   useEffect(() => {
     countPending();
@@ -36,13 +77,7 @@ export function useOfflineSync(
     // Online handler — tell SW to flush queue
     const handleOnline = () => {
       setIsOnline(true);
-      setIsSyncing(true);
-
-      // Tell service worker to flush queue
-      navigator.serviceWorker?.controller?.postMessage({ type: "ONLINE" });
-
-      // Fallback timeout if SW doesn't respond
-      setTimeout(() => setIsSyncing(false), 3000);
+      void syncPendingActions();
     };
 
     const handleOffline = () => {
@@ -67,7 +102,7 @@ export function useOfflineSync(
       window.removeEventListener("offline", handleOffline);
       navigator.serviceWorker?.removeEventListener("message", handleSwMessage);
     };
-  }, [countPending, onSyncComplete]);
+  }, [countPending, onSyncComplete, syncPendingActions]);
 
   useEffect(() => {
     // Initialize online state

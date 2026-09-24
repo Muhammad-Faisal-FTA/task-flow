@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1789439273558,
+      "tag": "0000_nostalgic_mephistopheles",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789443666818,
+      "tag": "0001_opposite_nocturne",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789447266818,
+      "tag": "0002_add_task_times",
+      "breakpoints": false
+    }
+  ]
+}

@@ -150,9 +150,10 @@ export default function Page() {
   return (
     <div
       style={{
-        minHeight: "100dvh",
+        height: "100dvh",
         backgroundColor: "var(--color-bg-app)",
         display: "flex",
+        overflow: "hidden",
       }}
     >
       <OfflineBanner
@@ -176,16 +177,14 @@ export default function Page() {
 
       {/* ── Center: Task list panel ───────────────────────────────────── */}
       <div
+        className="w-full md:w-[min(42vw,500px)] md:max-w-[500px] md:flex-shrink-0 min-w-0"
         style={{
-          width: "100%",
-          maxWidth: "500px",
-          flexShrink: 0,
           display: "flex",
           flexDirection: "column",
           borderRight: "1px solid var(--color-border-default)",
           position: "relative",
           overflow: "hidden", // ← prevents task cards overflowing
-          minHeight: "100dvh",
+          height: "100dvh",
         }}
       >
         {/* ── Screen transitions ──────────────────────────────────────── */}
@@ -194,7 +193,7 @@ export default function Page() {
           <div
             className={cn(
               "absolute inset-0 transition-all duration-300 ease-in-out",
-              screen === "home"
+              (screen === "home" || screen === "detail")
                 ? "opacity-100 translate-x-0 pointer-events-auto"
                 : "opacity-0 -translate-x-4 pointer-events-none",
             )}
@@ -245,9 +244,9 @@ export default function Page() {
 
       {/* ── DESKTOP: Detail panel (fills remaining width) ────────────── */}
       <div
-        className="hidden md:flex flex-col flex-1"
+        className="hidden md:flex flex-col flex-1 min-w-0"
         style={{
-          minHeight: "100dvh",
+          height: "100dvh",
           backgroundColor: "var(--color-bg-app)",
           overflow: "hidden",
         }}

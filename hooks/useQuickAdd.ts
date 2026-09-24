@@ -9,6 +9,13 @@ import {
 } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import type { TaskDTO, TaskListDTO } from "@/types/task";
+import { createPendingAction } from "@/lib/offlineActions";
+import {
+  cacheTasks,
+  enqueuePendingAction,
+  getCachedLists,
+  getCachedTasks,
+} from "@/lib/taskCache";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface UseQuickAddOptions {
@@ -48,6 +55,15 @@ export function useQuickAdd(
     async function fetchDefaultList() {
       try {
         setIsLoading(true);
+        const cachedLists = await getCachedLists();
+        const cachedDefault = cachedLists.find((l) => l.isDefault) ?? cachedLists[0] ?? null;
+        if (cachedDefault) {
+          setDefaultList(cachedDefault);
+          defaultListRef.current = cachedDefault;
+        }
+
+        if (typeof navigator !== "undefined" && !navigator.onLine) return;
+
         const token = await getAccessToken();
         if (!token) return;
 
@@ -92,6 +108,40 @@ export function useQuickAdd(
     setIsSubmitting(true);
 
     try {
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        const localId = `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const now = new Date().toISOString();
+        const localTask: TaskDTO = {
+          id: localId,
+          userId: "",
+          listId: list.id,
+          title,
+          completed: false,
+          completedAt: null,
+          dueDate: null,
+          dueTime: null,
+          repeat: "none",
+          status: "nodate",
+          deletedAt: null,
+          createdAt: now,
+          updatedAt: now,
+          links: [],
+        };
+        const cachedTasks = await getCachedTasks();
+        await cacheTasks([localTask, ...cachedTasks]);
+        await enqueuePendingAction(
+          createPendingAction(
+            "create-task",
+            { title, listId: list.id, dueDate: null, dueTime: null, repeat: "none" },
+            localId,
+          ),
+        );
+        clear();
+        onSuccess?.(localTask);
+        onError?.("Saved locally — will sync when online");
+        return;
+      }
+
       const token = await getAccessToken();
       if (!token) {
         onError?.("Session expired. Please log in again.");

@@ -48,6 +48,9 @@ const CreateTaskSchema = z.object({
     .nullable()
     .optional(),
 
+  startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(),
+  endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(),
+
   repeat: z
     .enum(["none", "daily", "weekdays", "weekly", "monthly", "yearly"])
     .optional()

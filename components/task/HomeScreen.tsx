@@ -8,6 +8,7 @@ import { FilterBar } from "@/components/layout/FilterBar";
 import { TaskCard } from "@/components/task/TaskCard";
 import { SearchBar } from "@/components/task/SearchBar";
 import { SearchResults } from "@/components/task/SearchResults";
+import { TaskTimeline } from "@/components/task/TaskTimeline";
 import { useTaskToggle } from "@/hooks/useTaskToggle";
 import { useSearch } from "@/hooks/useSearch";
 import type { TaskDTO, TaskListDTO } from "@/types/task";
@@ -135,9 +136,13 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
   );
 
   const isEmpty = tasks.length === 0;
+  const today = new Date().toISOString().split("T")[0];
+  const timedTodayTasks = tasks.filter(
+    (task) => task.dueDate === today && task.dueTime && !task.completed,
+  );
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="relative flex h-full flex-col">
       {/* ── Header ────────────────────────────────────────────────────── */}
       <HeaderBar
         title="✓ All Tasks"
@@ -290,9 +295,14 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
             </p>
           </div>
         ) : (
-          SECTIONS.map(({ label, status }) => {
+          <>
+            <TaskTimeline tasks={timedTodayTasks} onTaskClick={openTask} />
+            {SECTIONS.map(({ label, status }) => {
             const sectionTasks = tasks.filter(
-              (t) => t.status === status && !t.completed,
+              (t) =>
+                t.status === status &&
+                !t.completed &&
+                !(status === "today" && t.dueDate === today && t.dueTime),
             );
 
             if (sectionTasks.length === 0) return null;
@@ -340,7 +350,8 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
                 </div>
               </div>
             );
-          })
+            })}
+          </>
         )}
       </div>
     </div>

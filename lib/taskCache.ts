@@ -185,7 +185,12 @@ export async function clearCache(): Promise<void> {
 export async function enqueuePendingAction(action: PendingAction): Promise<void> {
   try {
     const db = await openDB();
-    await txPut(db, STORES.queue, action.id, action);
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORES.queue, "readwrite");
+      tx.objectStore(STORES.queue).put(action);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
   } catch (err) {
     console.warn("[taskCache] Failed to enqueue pending action:", err);
   }

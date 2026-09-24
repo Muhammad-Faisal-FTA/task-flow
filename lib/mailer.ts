@@ -1,5 +1,6 @@
 // lib/mailer.ts
 import nodemailer, { Transporter } from "nodemailer";
+import { buildAppUrl } from "@/lib/emailLinks";
 
 const {
   SMTP_HOST,
@@ -138,27 +139,20 @@ function ctaButton(href: string, label: string): string {
 export async function sendVerificationEmail(
   to:    string,
   name:  string,
-  token: string
+  otp: string
 ): Promise<void> {
-  const verifyUrl = `${baseUrl}/verify-email?token=${token}`;
-
   const body = `
     <h2 style="margin:0 0 8px;font-size:20px;color:#FFFFFF;font-weight:600;">
       Verify your email
     </h2>
     <p style="margin:0 0 20px;font-size:15px;color:#B0C4DE;line-height:1.6;">
-      Hi ${name}, thanks for signing up! Click the button below to verify
-      your email address and activate your account.
+      Hi ${name}, use this one-time code to activate your account:
     </p>
-
-    ${ctaButton(verifyUrl, "Verify Email")}
-
-    <p style="margin:20px 0 0;font-size:13px;color:#546E7A;line-height:1.5;">
-      Or copy and paste this link into your browser:<br/>
-      <span style="color:#29B6F6;word-break:break-all;">${verifyUrl}</span>
+    <p style="margin:24px 0;text-align:center;font-size:32px;font-weight:700;letter-spacing:8px;color:#29B6F6;">
+      ${otp}
     </p>
     <p style="margin:16px 0 0;font-size:13px;color:#546E7A;">
-      This link expires in <strong style="color:#B0C4DE;">24 hours</strong>.
+      This code expires in <strong style="color:#B0C4DE;">10 minutes</strong>.
     </p>
   `;
 
@@ -175,7 +169,7 @@ export async function sendPasswordResetEmail(
   name:  string,
   token: string
 ): Promise<void> {
-  const resetUrl = `${baseUrl}/reset-password?token=${token}`;
+  const resetUrl = buildAppUrl("/reset-password", { token }, baseUrl);
 
   const body = `
     <h2 style="margin:0 0 8px;font-size:20px;color:#FFFFFF;font-weight:600;">

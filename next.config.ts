@@ -7,6 +7,9 @@ const withPWA = withPWAInit({
   register:    true,
   skipWaiting: true,
   disable:     process.env.DISABLE_PWA === "true",
+  fallbacks: {
+    document: "/_offline",
+  },
 
   runtimeCaching: [
     // API routes — network first, 5 min cache

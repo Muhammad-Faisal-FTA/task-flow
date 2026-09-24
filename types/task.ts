@@ -1,6 +1,6 @@
 // types/task.ts
 
-import { Types } from "mongoose";
+type DatabaseId = string;
 
 // ─── Repeat frequency ─────────────────────────────────────────────────────────
 export type RepeatFrequency =
@@ -22,8 +22,8 @@ export type TaskStatus =
 
 // ─── TaskList document shape (mirrors MongoDB) ────────────────────────────────
 export interface ITaskList {
-  _id: Types.ObjectId;
-  userId: Types.ObjectId;        // owner
+  id: DatabaseId;
+  userId: DatabaseId;            // owner
   name: string;
   color: string;                 // hex e.g. "#1E8BC3"
   isDefault: boolean;            // true for auto-created "Default" list
@@ -33,9 +33,9 @@ export interface ITaskList {
 
 // ─── Task document shape (mirrors MongoDB) ────────────────────────────────────
 export interface ITask {
-  _id: Types.ObjectId;
-  userId: Types.ObjectId;        // owner — indexed
-  listId: Types.ObjectId;        // ref → TaskList — indexed
+  id: DatabaseId;
+  userId: DatabaseId;            // owner — indexed
+  listId: DatabaseId;            // ref → TaskList — indexed
   title: string;
   completed: boolean;
   completedAt: Date | null;      // when it was completed
@@ -60,6 +60,10 @@ export interface TaskDTO {
   completedAt: string | null;    // ISO string
   dueDate: string | null;        // "YYYY-MM-DD"
   dueTime: string | null;        // "HH:MM"
+  startTime: string | null;      // "HH:MM"
+  endTime: string | null;        // "HH:MM"
+  startTime?: string | null;     // "HH:MM" — optional timeline start
+  endTime?: string | null;       // "HH:MM" — optional timeline end
   repeat: RepeatFrequency;
   status: TaskStatus;            // derived — not in DB
   deletedAt: string | null;      // ISO string — for undo (FR-15)
@@ -97,6 +101,10 @@ export interface CreateTaskInput {
   listId: string;
   dueDate?: string | null;       // "YYYY-MM-DD"
   dueTime?: string | null;       // "HH:MM"
+  startTime?: string | null;     // "HH:MM"
+  endTime?: string | null;       // "HH:MM"
+  startTime?: string | null;     // "HH:MM"
+  endTime?: string | null;       // "HH:MM"
   repeat?: RepeatFrequency;
   links?: TaskLink[];           // FR-11 — optional array of links to attach to task
 }

@@ -31,6 +31,8 @@ function taskDtoToUi(dto: TaskDTO): Task {
     completed:     dto.completed,
     dueDate:       dto.dueDate,
     dueTime:       dto.dueTime,
+    startTime:     dto.startTime,
+    endTime:       dto.endTime,
     repeat:        dto.repeat,
     status:        dto.status,        // ← keep exact status from API
     hasRepeatIcon: dto.repeat !== "none",
@@ -199,9 +201,6 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
 
   // ── Filter ─────────────────────────────────────────────────────────────────
   const handleFilterChange = useCallback(async (id: string | null) => {
-    setFilterListId(id);
-    // Re-fetch with new filter
-    setIsLoading(true);
     try {
       const data = await taskApi.getTasks({
         listId:           id ?? undefined,
@@ -212,10 +211,9 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
         ? flattenGrouped(data)
         : data;
       setTasks(dtos.map(taskDtoToUi));
+      setFilterListId(id);
     } catch (err) {
       console.error("[filterChange]", err);
-    } finally {
-      setIsLoading(false);
     }
   }, []);
 
@@ -275,6 +273,8 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
       completed: taskInput.completed,
       dueDate: taskInput.dueDate,
       dueTime: taskInput.dueTime,
+      startTime: taskInput.startTime,
+      endTime: taskInput.endTime,
       repeat: taskInput.repeat,
       status: "nodate",
       hasRepeatIcon: taskInput.repeat !== "none",
@@ -298,6 +298,8 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
             listId: taskInput.listId,
             dueDate: taskInput.dueDate,
             dueTime: taskInput.dueTime,
+            startTime: taskInput.startTime,
+            endTime: taskInput.endTime,
             repeat: taskInput.repeat,
             completed: taskInput.completed,
             id: taskInput.id,
@@ -307,7 +309,6 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
         await enqueuePendingAction(action);
         await refreshPendingCount();
         showToast("Saved locally — will sync when online");
-        goBack();
         return true;
       }
 
@@ -318,6 +319,8 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
           listId:    taskInput.listId,
           dueDate:   taskInput.dueDate,
           dueTime:   taskInput.dueTime,
+          startTime: taskInput.startTime,
+          endTime:   taskInput.endTime,
           repeat:    taskInput.repeat,
           completed: taskInput.completed,
         });
@@ -329,13 +332,14 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
           listId:  taskInput.listId,
           dueDate: taskInput.dueDate,
           dueTime: taskInput.dueTime,
+          startTime: taskInput.startTime,
+          endTime: taskInput.endTime,
           repeat:  taskInput.repeat,
         });
         showToast("Task added ✓");
       }
 
       await fetchTasks();  // refresh with correct status
-      goBack();
       return true;
     } catch (err) {
       const e = err as { message?: string };
