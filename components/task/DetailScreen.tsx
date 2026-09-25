@@ -171,7 +171,10 @@ export function DetailScreen({ state }: DetailScreenProps) {
     "flex items-center justify-between rounded-card px-4 py-3 cursor-pointer transition-all duration-200 active:scale-[0.99]";
 
   return (
-    <div className="flex flex-col h-full">
+    <div
+      className="flex flex-col h-full"
+      style={{ backgroundColor: "var(--color-bg-app)" }}
+    >
       {/* ── Header ──────────────────────────────────────────────────── */}
       <HeaderBar
         title={isNew ? "New Task" : "Edit Task"}
@@ -215,7 +218,10 @@ export function DetailScreen({ state }: DetailScreenProps) {
       {/* ↓ padding-bottom reduced — save button no longer fixed       */}
       <div
         className="flex-1 overflow-y-auto scrollbar-hide"
-        style={{ padding: "20px 16px 24px" }}
+        style={{
+          padding: "20px 16px 24px",
+          backgroundColor: "var(--color-bg-app)",
+        }}
       >
         {/* Task title */}
         <div style={{ marginBottom: "20px" }}>

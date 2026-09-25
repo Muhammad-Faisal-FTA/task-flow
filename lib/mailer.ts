@@ -6,9 +6,11 @@ const {
   SMTP_HOST,
   SMTP_PORT,
   SMTP_USER,
-  SMTP_PASS,
+  SMTP_PASS: rawSmtpPass,
   SMTP_FROM,
 } = process.env;
+
+const SMTP_PASS = rawSmtpPass?.replace(/\s/g, "");
 
 const baseUrl =
   process.env.APP_URL ||
@@ -53,12 +55,21 @@ interface MailOptions {
 
 async function sendMail(options: MailOptions): Promise<void> {
   const transporter = getTransporter();
-  await transporter.sendMail({
-    from: `"TaskFlow" <${SMTP_FROM}>`,
-    to:      options.to,
-    subject: options.subject,
-    html:    options.html,
-  });
+  try {
+    await transporter.sendMail({
+      from: `"TaskFlow" <${SMTP_FROM}>`,
+      to:      options.to,
+      subject: options.subject,
+      html:    options.html,
+    });
+  } catch (error) {
+    console.error("Email delivery failed", {
+      code: error instanceof Error && "code" in error ? error.code : undefined,
+      message: error instanceof Error ? error.message : String(error),
+      recipient: options.to,
+    });
+    throw new Error("EMAIL_DELIVERY_FAILED");
+  }
 }
 
 // ─── Base template ────────────────────────────────────────────────────────────

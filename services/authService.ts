@@ -20,7 +20,7 @@ export async function registerUser(p: RegisterPayload) {
   const [user] = await db.insert(users).values({ name: p.name.trim(), email, password: await bcrypt.hash(p.password, 12) }).returning();
   const otp = randomInt(100000, 1000000).toString();
   await db.update(users).set({ verificationOtpHash: hashOtp(otp), verificationOtpExpiry: new Date(Date.now() + 10 * 60_000), updatedAt: new Date() }).where(eq(users.id, user.id));
-  try { await sendVerificationEmail(email, user.name, otp); } catch (error) { console.error("Verification email failed", error); }
+  await sendVerificationEmail(email, user.name, otp);
   return { message: "Registration successful. Enter the OTP sent to your email." };
 }
 export async function verifyEmail(email: string, otp: string) {
@@ -66,6 +66,6 @@ export async function resetPassword(token: string, password: string) {
   return { message: "Password reset successful. You can now log in." };
 }
 export const AUTH_ERRORS: Record<string, { status: number; message: string }> = {
-  EMAIL_TAKEN: { status: 409, message: "An account with this email already exists." }, INVALID_CREDENTIALS: { status: 401, message: "Invalid email or password." }, EMAIL_NOT_VERIFIED: { status: 403, message: "Please verify your email before logging in." }, USER_NOT_FOUND: { status: 404, message: "User not found." }, VERIFY_TOKEN_EXPIRED: { status: 410, message: "Verification link expired." }, VERIFY_TOKEN_INVALID: { status: 400, message: "Invalid verification link." }, REFRESH_TOKEN_EXPIRED: { status: 401, message: "Session expired." }, REFRESH_TOKEN_INVALID: { status: 401, message: "Invalid session." }, RESET_TOKEN_EXPIRED: { status: 410, message: "Reset link expired." }, RESET_TOKEN_INVALID: { status: 400, message: "Invalid reset link." },
+  EMAIL_TAKEN: { status: 409, message: "An account with this email already exists." }, INVALID_CREDENTIALS: { status: 401, message: "Invalid email or password." }, EMAIL_NOT_VERIFIED: { status: 403, message: "Please verify your email before logging in." }, USER_NOT_FOUND: { status: 404, message: "User not found." }, VERIFY_TOKEN_EXPIRED: { status: 410, message: "Verification link expired." }, VERIFY_TOKEN_INVALID: { status: 400, message: "Invalid verification link." }, REFRESH_TOKEN_EXPIRED: { status: 401, message: "Session expired." }, REFRESH_TOKEN_INVALID: { status: 401, message: "Invalid session." }, RESET_TOKEN_EXPIRED: { status: 410, message: "Reset link expired." }, RESET_TOKEN_INVALID: { status: 400, message: "Invalid reset link." }, EMAIL_DELIVERY_FAILED: { status: 503, message: "We could not send the email right now. Please try again later." },
 };
 export function resolveAuthError(error: unknown) { return AUTH_ERRORS[error instanceof Error ? error.message : "UNKNOWN"] ?? { status: 500, message: "Something went wrong. Please try again." }; }
