@@ -2,45 +2,79 @@
 import nodemailer, { Transporter } from "nodemailer";
 import { buildAppUrl } from "@/lib/emailLinks";
 
-const {
-  SMTP_HOST,
-  SMTP_PORT,
-  SMTP_USER,
-  SMTP_PASS: rawSmtpPass,
-  SMTP_FROM,
-} = process.env;
-
-const SMTP_PASS = rawSmtpPass?.replace(/\s/g, "");
-
-const baseUrl =
-  process.env.APP_URL ||
-  (process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3000");
-
-if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS || !SMTP_FROM || !baseUrl) {
-  throw new Error(
-    "Missing mailer env vars:\n" +
-    "SMTP_HOST=\nSMTP_PORT=\nSMTP_USER=\nSMTP_PASS=\nSMTP_FROM=\nAPP_URL="
-  );
+export interface MailerConfig {
+  host: string;
+  port: number;
+  user: string;
+  pass: string;
+  from: string;
+  baseUrl: string;
 }
+
+export function resolveMailerConfig(env: NodeJS.ProcessEnv = process.env): MailerConfig | null {
+  const {
+    SMTP_HOST,
+    SMTP_PORT,
+    SMTP_USER,
+    SMTP_PASS: rawSmtpPass,
+    SMTP_FROM,
+    APP_URL,
+    VERCEL_URL,
+  } = env;
+
+  const SMTP_PASS = rawSmtpPass?.replace(/\s/g, "");
+  const baseUrl = APP_URL || (VERCEL_URL ? `https://${VERCEL_URL}` : "http://localhost:3000");
+
+  const required = [
+    ["SMTP_HOST", SMTP_HOST],
+    ["SMTP_PORT", SMTP_PORT],
+    ["SMTP_USER", SMTP_USER],
+    ["SMTP_PASS", SMTP_PASS],
+    ["SMTP_FROM", SMTP_FROM],
+  ] as const;
+
+  const missing = required.filter(([, value]) => !value).map(([name]) => name);
+
+  if (missing.length > 0 || !baseUrl) {
+    console.error("[mailer] Missing required env vars:", {
+      missing,
+      baseUrl: !!baseUrl,
+    });
+    return null;
+  }
+
+  return {
+    host: SMTP_HOST!,
+    port: Number(SMTP_PORT),
+    user: SMTP_USER!,
+    pass: SMTP_PASS!,
+    from: SMTP_FROM!,
+    baseUrl,
+  };
+}
+
+const mailerConfig = resolveMailerConfig();
 
 // ─── Singleton transporter ────────────────────────────────────────────────────
 declare global {
   var _mailerTransporter: Transporter | undefined;
 }
 
-function getTransporter(): Transporter {
+function getTransporter(): Transporter | null {
+  if (!mailerConfig) {
+    return null;
+  }
+
   if (global._mailerTransporter) return global._mailerTransporter;
 
   global._mailerTransporter = nodemailer.createTransport({
-    host:   SMTP_HOST,
-    port:   Number(SMTP_PORT),
-    secure: Number(SMTP_PORT) === 465,
-    auth:   { user: SMTP_USER, pass: SMTP_PASS },
+    host: mailerConfig.host,
+    port: mailerConfig.port,
+    secure: mailerConfig.port === 465,
+    auth: { user: mailerConfig.user, pass: mailerConfig.pass },
     connectionTimeout: 5000,
-    greetingTimeout:   5000,
-    socketTimeout:     10000,
+    greetingTimeout: 5000,
+    socketTimeout: 10000,
   });
 
   return global._mailerTransporter;
@@ -48,19 +82,28 @@ function getTransporter(): Transporter {
 
 // ─── Send helper ──────────────────────────────────────────────────────────────
 interface MailOptions {
-  to:      string;
+  to: string;
   subject: string;
-  html:    string;
+  html: string;
 }
 
 async function sendMail(options: MailOptions): Promise<void> {
   const transporter = getTransporter();
+
+  if (!transporter || !mailerConfig) {
+    console.error("[mailer] Mail delivery skipped because SMTP env vars are missing.", {
+      recipient: options.to,
+      subject: options.subject,
+    });
+    throw new Error("MAILER_NOT_CONFIGURED");
+  }
+
   try {
     await transporter.sendMail({
-      from: `"TaskFlow" <${SMTP_FROM}>`,
-      to:      options.to,
+      from: `"TaskFlow" <${mailerConfig.from}>`,
+      to: options.to,
       subject: options.subject,
-      html:    options.html,
+      html: options.html,
     });
   } catch (error) {
     console.error("Email delivery failed", {
@@ -180,7 +223,7 @@ export async function sendPasswordResetEmail(
   name:  string,
   token: string
 ): Promise<void> {
-  const resetUrl = buildAppUrl("/reset-password", { token }, baseUrl);
+  const resetUrl = buildAppUrl("/reset-password", { token }, mailerConfig?.baseUrl ?? "http://localhost:3000");
 
   const body = `
     <h2 style="margin:0 0 8px;font-size:20px;color:#FFFFFF;font-weight:600;">
