@@ -55,7 +55,47 @@ export async function updateTask(userId: string, id: string, input: UpdateTaskIn
   const completed = input.completed ?? current.completed;
   const [task] = await db.update(tasks).set({ ...(input.listId && { listId: input.listId }), ...(input.title !== undefined && { title: input.title.trim() }), ...(input.dueDate !== undefined && { dueDate: parseDueDate(input.dueDate) }), ...(input.dueTime !== undefined && { dueTime: input.dueTime }), ...(input.startTime !== undefined && { startTime: input.startTime }), ...(input.endTime !== undefined && { endTime: input.endTime }), ...(input.repeat && { repeat: input.repeat }), ...(input.links && { links: input.links }), ...(input.completed !== undefined && { completed, completedAt: completed ? new Date() : null }), updatedAt: new Date() }).where(eq(tasks.id, id)).returning(); return taskDto(task);
 }
-export async function toggleTaskComplete(userId: string, id: string) { const t = await ownedTask(userId, id); if (!t) throw new Error("TASK_NOT_FOUND"); const [updated] = await db.update(tasks).set({ completed: !t.completed, completedAt: !t.completed ? new Date() : null, updatedAt: new Date() }).where(eq(tasks.id, id)).returning(); return taskDto(updated); }
+function nextRepeatDate(date: Date, repeat: Task["repeat"]): Date {
+  const next = new Date(date);
+  if (repeat === "daily") next.setDate(next.getDate() + 1);
+  if (repeat === "weekdays") {
+    do next.setDate(next.getDate() + 1);
+    while (next.getDay() === 0 || next.getDay() === 6);
+  }
+  if (repeat === "weekly") next.setDate(next.getDate() + 7);
+  if (repeat === "monthly") next.setMonth(next.getMonth() + 1);
+  if (repeat === "yearly") next.setFullYear(next.getFullYear() + 1);
+  return next;
+}
+
+export async function toggleTaskComplete(userId: string, id: string) {
+  const t = await ownedTask(userId, id);
+  if (!t) throw new Error("TASK_NOT_FOUND");
+
+  const completing = !t.completed;
+  const [updated] = await db.update(tasks).set({
+    completed: completing,
+    completedAt: completing ? new Date() : null,
+    updatedAt: new Date(),
+  }).where(eq(tasks.id, id)).returning();
+
+  if (completing && t.repeat !== "none" && t.dueDate) {
+    await db.insert(tasks).values({
+      userId: t.userId,
+      listId: t.listId,
+      title: t.title,
+      completed: false,
+      dueDate: nextRepeatDate(t.dueDate, t.repeat),
+      dueTime: "00:00",
+      startTime: "00:00",
+      endTime: t.endTime,
+      repeat: t.repeat,
+      links: t.links,
+    });
+  }
+
+  return taskDto(updated);
+}
 export async function deleteTask(userId: string, id: string) { if (!(await ownedTask(userId, id))) throw new Error("TASK_NOT_FOUND"); return taskDto((await db.update(tasks).set({ deletedAt: new Date(), updatedAt: new Date() }).where(eq(tasks.id, id)).returning())[0]); }
 export async function restoreTask(userId: string, id: string) { if (!(await ownedTask(userId, id))) throw new Error("TASK_NOT_FOUND"); return taskDto((await db.update(tasks).set({ deletedAt: null, updatedAt: new Date() }).where(eq(tasks.id, id)).returning())[0]); }
 export async function permanentDeleteTask(userId: string, id: string) { const deleted = await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId))).returning({ id: tasks.id }); if (!deleted[0]) throw new Error("TASK_NOT_FOUND"); return { message: "Task permanently deleted." }; }
