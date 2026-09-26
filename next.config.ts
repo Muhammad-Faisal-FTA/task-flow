@@ -6,7 +6,7 @@ const withPWA = withPWAInit({
   dest:        "public",
   register:    true,
   skipWaiting: true,
-  disable:     process.env.DISABLE_PWA === "true",
+  disable:     false,
   fallbacks: {
     document: "/_offline",
   },
