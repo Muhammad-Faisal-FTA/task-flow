@@ -15,6 +15,8 @@ interface UsePushNotificationsReturn {
   unsubscribe:  () => Promise<void>;
 }
 
+const FALLBACK_VAPID_PUBLIC_KEY = "BPaktu_UhvjXblKXJZYo1Jw5A_Xa1oH8Ug2X3m5bGw0bxMA44Wi7HHlWtHrzXQNLE-WGSL3VjmzZSulUjz53Fnw";
+
 // ─── Helper: convert base64 VAPID key ────────────────────────────────────────
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding  = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -67,8 +69,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
       const reg = await navigator.serviceWorker.ready;
 
       // 3. Subscribe to push
-      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-      if (!vapidKey) throw new Error("VAPID public key not set");
+      const vapidKey = FALLBACK_VAPID_PUBLIC_KEY;
 
       const subscription = await reg.pushManager.subscribe({
         userVisibleOnly:      true,

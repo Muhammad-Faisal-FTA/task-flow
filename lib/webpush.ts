@@ -1,6 +1,10 @@
 // lib/webpush.ts
 import * as webpush from "web-push";
 
+const FALLBACK_VAPID_SUBJECT = "mailto:xelolabsse@gmail.com";
+const FALLBACK_VAPID_PUBLIC_KEY = "BPaktu_UhvjXblKXJZYo1Jw5A_Xa1oH8Ug2X3m5bGw0bxMA44Wi7HHlWtHrzXQNLE-WGSL3VjmzZSulUjz53Fnw";
+const FALLBACK_VAPID_PRIVATE_KEY = "bcbBEHGK6rEL3Wr5o0YYqCsnZOmnkHbYqwOHmc8jsjw";
+
 export interface PushPayload {
   title:   string;
   body:    string;
@@ -25,18 +29,11 @@ let initialized = false;
 function ensureInitialized(): void {
   if (initialized) return;
 
-  const subject    = process.env.VAPID_SUBJECT;
-  const publicKey  = process.env.VAPID_PUBLIC_KEY;
-  const privateKey = process.env.VAPID_PRIVATE_KEY;
-
-  if (!subject || !publicKey || !privateKey) {
-    throw new Error(
-      "[webpush] Missing VAPID environment variables. " +
-      "Run: npx web-push generate-vapid-keys"
-    );
-  }
-
-  webpush.setVapidDetails(subject, publicKey, privateKey);
+  webpush.setVapidDetails(
+    FALLBACK_VAPID_SUBJECT,
+    FALLBACK_VAPID_PUBLIC_KEY,
+    FALLBACK_VAPID_PRIVATE_KEY,
+  );
   initialized = true;
 }
 
