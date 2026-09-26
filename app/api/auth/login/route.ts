@@ -20,6 +20,7 @@ const LoginSchema = z.object({
 // ─── Handler ──────────────────────────────────────────────────────────────────
 const handler = async (req: NextRequest): Promise<NextResponse> => {
   try {
+    console.log("Login attempt at", new Date().toISOString());
     // 1. Parse body
     const body = await req.json().catch(() => null);
     if (!body) {

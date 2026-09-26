@@ -563,6 +563,9 @@ import { useCdfSettings }           from "@/hooks/useCdfSettings";
 import { usePushNotifications }     from "@/hooks/usePushNotifications";
 import { HeaderBar }                from "@/components/layout/HeaderBar";
 import { BottomNav }                from "@/components/layout/BottomNav";
+import { SidebarNav }               from "@/components/layout/SidebarNav";
+import { useTheme }                 from "@/hooks/useTheme";
+import { THEME_NAMES }              from "@/lib/themes";
 import {
   Bell, Shield, ChevronRight,
   LogOut, Trash2, BarChart2,
@@ -765,6 +768,55 @@ function CdfToggleRow() {
   );
 }
 
+function ThemeRow() {
+  const { theme, setTheme, labels } = useTheme();
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-3">
+      <div
+        className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[8px]"
+        style={{
+          backgroundColor: "rgba(21,101,168,0.15)",
+          color: "var(--color-accent)",
+        }}
+      >
+        <Moon style={{ width: "16px", height: "16px" }} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p style={{
+          fontSize: "var(--text-base)",
+          fontWeight: 500,
+          color: "var(--color-text-primary)",
+        }}>
+          Theme
+        </p>
+        <p style={{
+          fontSize: "var(--text-xs)",
+          color: "var(--color-text-hint)",
+          marginTop: "1px",
+        }}>
+          {labels[theme]}
+        </p>
+      </div>
+      <select
+        value={theme}
+        onChange={(event) => setTheme(event.target.value as typeof theme)}
+        aria-label="Choose theme"
+        className="max-w-[46%] rounded-[8px] px-2 py-2 text-sm"
+        style={{
+          backgroundColor: "var(--color-bg-header)",
+          color: "var(--color-text-primary)",
+          border: "1px solid var(--color-border-default)",
+        }}
+      >
+        {THEME_NAMES.map((name) => (
+          <option key={name} value={name}>{labels[name]}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 // ─── Notification toggle row ──────────────────────────────────────────────────
 function NotificationRow() {
   // ← Hook called INSIDE component — correct
@@ -892,24 +944,31 @@ export default function SettingsPage() {
   };
 
   return (
-    <div style={{
-      minHeight:       "100dvh",
-      backgroundColor: "var(--color-bg-app)",
-      maxWidth:        "430px",
-      margin:          "0 auto",
-      display:         "flex",
-      flexDirection:   "column",
-    }}>
-      <HeaderBar
-        title="Settings"
-        showBack
-        onBack={() => router.push("/")}
-      />
+    <div className="flex min-h-screen w-full" style={{ backgroundColor: "var(--color-bg-app)" }}>
+      <div className="hidden md:block flex-shrink-0">
+        <SidebarNav
+          screen="settings"
+          hasOverdue={false}
+          quickAddOpen={false}
+          onHome={() => router.push("/")}
+          onAdd={() => router.push("/")}
+          onLists={() => router.push("/")}
+          onSettings={() => {}}
+        />
+      </div>
 
-      <div
-        className="flex-1 overflow-y-auto scrollbar-hide"
-        style={{ padding: "20px 16px 16px" }}
-      >
+      <main className="flex min-w-0 flex-1 flex-col">
+        <HeaderBar
+          title="Settings"
+          showBack
+          onBack={() => router.push("/")}
+        />
+
+        <div
+          className="flex-1 overflow-y-auto scrollbar-hide"
+          style={{ padding: "20px 16px 16px" }}
+        >
+          <div className="mx-auto w-full max-w-4xl">
         {/* ── Profile card ──────────────────────────────────────────── */}
         <div
           className="flex items-center gap-4 rounded-card mb-5 px-4 py-4"
@@ -998,11 +1057,7 @@ export default function SettingsPage() {
 
         {/* ── App ───────────────────────────────────────────────────── */}
         <SettingsSection title="App">
-          <SettingsRow
-            icon={<Moon style={{ width: "16px", height: "16px" }} />}
-            label="Theme"
-            value="Dark (default)"
-          />
+          <ThemeRow />
           <RowDivider />
           <SettingsRow
             icon={<Info style={{ width: "16px", height: "16px" }} />}
@@ -1011,8 +1066,8 @@ export default function SettingsPage() {
           />
         </SettingsSection>
 
-        {/* ── Account Actions ───────────────────────────────────────── */}
-        <SettingsSection title="Account Actions">
+          {/* ── Account Actions ───────────────────────────────────────── */}
+          <SettingsSection title="Account Actions">
           <SettingsRow
             icon={<LogOut style={{ width: "16px", height: "16px" }} />}
             label={
@@ -1039,18 +1094,22 @@ export default function SettingsPage() {
               }
             }}
           />
-        </SettingsSection>
-      </div>
+            </SettingsSection>
+          </div>
+        </div>
 
-      <BottomNav
-        screen="settings"
-        hasOverdue={false}
-        quickAddOpen={false}
-        onHome={() => router.push("/")}
-        onAdd={() => router.push("/")}
-        onLists={() => router.push("/")}
-        onSettings={() => {}}
-      />
+        <div className="md:hidden">
+          <BottomNav
+            screen="settings"
+            hasOverdue={false}
+            quickAddOpen={false}
+            onHome={() => router.push("/")}
+            onAdd={() => router.push("/")}
+            onLists={() => router.push("/")}
+            onSettings={() => {}}
+          />
+        </div>
+      </main>
     </div>
   );
 }

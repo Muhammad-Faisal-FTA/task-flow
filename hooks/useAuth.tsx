@@ -33,7 +33,7 @@ interface AuthActions {
   logout: () => Promise<void>;
   forgotPassword: (email: string) => Promise<{ message: string }>;
   resetPassword: (token: string, password: string, confirmPassword: string) => Promise<{ message: string }>;
-  verifyEmail: (token: string) => Promise<{ message: string }>;
+  verifyEmail: (email: string, otp: string) => Promise<{ message: string }>;
   getAccessToken: () => Promise<string | null>;
 }
 
@@ -315,11 +315,12 @@ function useAuthState(): UseAuthReturn {
 
   // ── Verify email ───────────────────────────────────────────────────────────
   const verifyEmail = useCallback(async (
-    token: string
+    email: string,
+    otp: string
   ): Promise<{ message: string }> => {
     return authFetch("/api/auth/verify-email", {
       method: "POST",
-      body: JSON.stringify({ token }),
+      body: JSON.stringify({ email, otp }),
     });
   }, []);
 

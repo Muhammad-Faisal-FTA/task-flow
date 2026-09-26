@@ -1,21 +1,20 @@
 // types/auth.ts
 
-import { Types } from "mongoose";
 import { NextRequest } from "next/server";
 
 // ─── User document shape (mirrors MongoDB) ────────────────────────────────────
 export interface IUser {
-  _id: Types.ObjectId;
+  id: string;
   name: string;
   email: string;
   password: string;
   isVerified: boolean;
-  emailVerifyToken: string | null;
+  verificationOtpHash: string | null;
+  verificationOtpExpiry: Date | null;
   resetPasswordToken: string | null;
   resetPasswordExpiry: Date | null;
   createdAt: Date;
   updatedAt: Date;
-  comparePassword(candidate: string): Promise<boolean>;
 }
 
 // ─── JWT payload shapes ───────────────────────────────────────────────────────

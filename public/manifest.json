@@ -2,7 +2,7 @@
   "name": "TaskFlow",
   "short_name": "TaskFlow",
   "description": "Manage your tasks efficiently with TaskFlow",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",

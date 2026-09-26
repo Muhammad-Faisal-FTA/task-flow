@@ -7,6 +7,9 @@ const withPWA = withPWAInit({
   register:    true,
   skipWaiting: true,
   disable:     process.env.DISABLE_PWA === "true",
+  fallbacks: {
+    document: "/_offline",
+  },
 
   runtimeCaching: [
     // API routes — network first, 5 min cache
@@ -54,6 +57,20 @@ const withPWA = withPWAInit({
         expiration: {
           maxEntries:    30,
           maxAgeSeconds: 365 * 24 * 60 * 60,
+        },
+      },
+    },
+
+    // App shell / navigation pages — offline-first
+    {
+      urlPattern: ({ request }) => request.mode === "navigate",
+      handler: "NetworkFirst",
+      options: {
+        cacheName: "pages-cache",
+        networkTimeoutSeconds: 10,
+        expiration: {
+          maxEntries: 50,
+          maxAgeSeconds: 24 * 60 * 60,
         },
       },
     },

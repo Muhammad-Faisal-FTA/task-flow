@@ -3,18 +3,17 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/middlewares/authMiddleware";
-import { connectDB } from "@/lib/mongoose";
-import { UserModel } from "@/models/user.model";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { users } from "@/db/schema";
 import type { AccessTokenPayload } from "@/types/auth";
 
 const handler = async (
   _req: NextRequest,
-  _ctx: { params: Record<string, string> },
+  _ctx: { params: Promise<Record<string, string>> },
   user: AccessTokenPayload
 ): Promise<NextResponse> => {
-  await connectDB();
-
-  const found = await UserModel.findById(user.userId).lean();
+  const found = (await db.select().from(users).where(eq(users.id, user.userId)).limit(1))[0];
   if (!found) {
     return NextResponse.json(
       { error: "User not found." },
@@ -24,7 +23,7 @@ const handler = async (
 
   return NextResponse.json({
     user: {
-      id:         found._id.toString(),
+      id:         found.id,
       name:       found.name,
       email:      found.email,
       isVerified: found.isVerified,

@@ -147,17 +147,20 @@ export function DetailScreen({ state }: DetailScreenProps) {
     if (!form?.title.trim()) return;
     setIsSaving(true);
     try {
-      await saveTask({
+      const saved = await saveTask({
         id: form.id || undefined,
         title: form.title,
         listId: form.listId,
         completed: form.completed,
         dueDate: form.dueDate,
         dueTime: form.dueTime,
+        startTime: form.startTime ?? form.dueTime,
+        endTime: form.endTime ?? null,
         repeat: form.repeat,
         links:     form.links ?? [],     // ← add this
 
       });
+      if (saved) goBack();
     } finally {
       setIsSaving(false);
     }
@@ -168,7 +171,10 @@ export function DetailScreen({ state }: DetailScreenProps) {
     "flex items-center justify-between rounded-card px-4 py-3 cursor-pointer transition-all duration-200 active:scale-[0.99]";
 
   return (
-    <div className="flex flex-col h-full">
+    <div
+      className="flex flex-col h-full"
+      style={{ backgroundColor: "var(--color-bg-app)" }}
+    >
       {/* ── Header ──────────────────────────────────────────────────── */}
       <HeaderBar
         title={isNew ? "New Task" : "Edit Task"}
@@ -212,7 +218,10 @@ export function DetailScreen({ state }: DetailScreenProps) {
       {/* ↓ padding-bottom reduced — save button no longer fixed       */}
       <div
         className="flex-1 overflow-y-auto scrollbar-hide"
-        style={{ padding: "20px 16px 24px" }}
+        style={{
+          padding: "20px 16px 24px",
+          backgroundColor: "var(--color-bg-app)",
+        }}
       >
         {/* Task title */}
         <div style={{ marginBottom: "20px" }}>
@@ -437,6 +446,34 @@ export function DetailScreen({ state }: DetailScreenProps) {
             <span>Day summary 8AM · Notif at time</span>
           </div>
         </div>
+
+        {/* Repeat */}
+        {form.dueDate && (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" style={{ marginBottom: "20px" }}>
+            <label className="flex flex-col gap-2">
+              <span className={labelCls} style={{ fontSize: "var(--text-xs)", color: "var(--color-text-accent)" }}>
+                Start time
+              </span>
+              <input
+                type="time"
+                value={form.startTime ?? form.dueTime ?? ""}
+                onChange={(event) => update("startTime", event.target.value || null)}
+                className="auth-input w-full"
+              />
+            </label>
+            <label className="flex flex-col gap-2">
+              <span className={labelCls} style={{ fontSize: "var(--text-xs)", color: "var(--color-text-accent)" }}>
+                End time
+              </span>
+              <input
+                type="time"
+                value={form.endTime ?? ""}
+                onChange={(event) => update("endTime", event.target.value || null)}
+                className="auth-input w-full"
+              />
+            </label>
+          </div>
+        )}
 
         {/* Repeat */}
         <div style={{ marginBottom: "20px" }}>

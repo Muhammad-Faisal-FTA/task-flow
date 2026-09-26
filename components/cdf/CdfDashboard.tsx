@@ -59,10 +59,7 @@ function CdfDisabledState() {
         and Focus.
       </p>
 
-      <div
-        className="flex flex-col gap-3 mt-8 w-full"
-        style={{ maxWidth: "280px" }}
-      >
+      <div className="mt-8 grid w-full max-w-[560px] grid-cols-1 gap-3 px-6 md:grid-cols-3 md:max-w-4xl">
         {[
           {
             icon: "📅",
@@ -82,7 +79,7 @@ function CdfDisabledState() {
         ].map((item) => (
           <div
             key={item.label}
-            className="flex items-center gap-3 rounded-card px-4 py-3"
+            className="flex min-w-0 items-center gap-3 rounded-card px-4 py-3"
             style={{
               backgroundColor: "var(--color-bg-card)",
               border: "1px solid var(--color-border-default)",

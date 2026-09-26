@@ -11,9 +11,9 @@ A full-stack, mobile-first task manager built with Next.js 16, MongoDB, and Type
 
 ## 📸 Screenshots
 
-| Home | CDF Dashboard | Detail |
-|------|---------------|--------|
-| Task sections with overdue tracking | Circular gauges + streak | Custom date/time picker |
+| Home | Task Lists |
+|------|------------|
+| ![TaskFlow home screen with overdue and today tasks](public/WhatsApp%20Image%202026-06-05%20at%204.58.14%20PM.jpeg) | ![TaskFlow task lists screen with list counts and overdue totals](public/WhatsApp%20Image%202026-06-05%20at%204.30.24%20PM.jpeg) |
 
 ---
 

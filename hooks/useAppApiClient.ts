@@ -8,7 +8,10 @@ import {
   getCachedTasks,
   getCachedLists,
   getCacheAge,
+  enqueuePendingAction,
+  getPendingActions,
 } from "@/lib/taskCache";
+import { createPendingAction } from "@/lib/offlineActions";
 
 import type {
   TaskDTO,
@@ -28,6 +31,8 @@ function taskDtoToUi(dto: TaskDTO): Task {
     completed:     dto.completed,
     dueDate:       dto.dueDate,
     dueTime:       dto.dueTime,
+    startTime:     dto.startTime,
+    endTime:       dto.endTime,
     repeat:        dto.repeat,
     status:        dto.status,        // ← keep exact status from API
     hasRepeatIcon: dto.repeat !== "none",
@@ -81,6 +86,7 @@ export function useAppApiClient(
   const [toast,    setToast]              = useState<string | null>(null);
   const [isLoading, setIsLoading]         = useState(false);
   const [error,    setError]              = useState<string | null>(null);
+  const [offlinePendingCount, setOfflinePendingCount] = useState(0);
   // ─── Add undo state ───────────────────────────────────────────────────────────
 // Add this near other useState declarations:
 const [undoTask,    setUndoTask]    = useState<Task | null>(null);
@@ -170,6 +176,15 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
     await Promise.all([fetchTasks(), fetchLists()]);
   }, [fetchTasks, fetchLists]);
 
+  const refreshPendingCount = useCallback(async () => {
+    const pending = await getPendingActions();
+    setOfflinePendingCount(pending.length);
+  }, []);
+
+  useEffect(() => {
+    void refreshPendingCount();
+  }, [refreshPendingCount]);
+
   // ── Navigation ─────────────────────────────────────────────────────────────
   const navigate = useCallback((to: "home" | "detail" | "lists") => {
     setScreenHistory(prev => [...prev, screen]);
@@ -186,9 +201,6 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
 
   // ── Filter ─────────────────────────────────────────────────────────────────
   const handleFilterChange = useCallback(async (id: string | null) => {
-    setFilterListId(id);
-    // Re-fetch with new filter
-    setIsLoading(true);
     try {
       const data = await taskApi.getTasks({
         listId:           id ?? undefined,
@@ -199,10 +211,9 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
         ? flattenGrouped(data)
         : data;
       setTasks(dtos.map(taskDtoToUi));
+      setFilterListId(id);
     } catch (err) {
       console.error("[filterChange]", err);
-    } finally {
-      setIsLoading(false);
     }
   }, []);
 
@@ -254,8 +265,53 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
   ): Promise<boolean> => {
     if (!taskInput.title.trim()) return false;
 
+    const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
+    const optimisticTask: Task = {
+      id: taskInput.id ?? `local-${Date.now()}`,
+      title: taskInput.title,
+      listId: taskInput.listId,
+      completed: taskInput.completed,
+      dueDate: taskInput.dueDate,
+      dueTime: taskInput.dueTime,
+      startTime: taskInput.startTime,
+      endTime: taskInput.endTime,
+      repeat: taskInput.repeat,
+      status: "nodate",
+      hasRepeatIcon: taskInput.repeat !== "none",
+      links: [],
+    };
+
+    setTasks(prev => {
+      if (taskInput.id) {
+        return prev.map(item => item.id === taskInput.id ? optimisticTask : item);
+      }
+      return [optimisticTask, ...prev];
+    });
+
     setIsLoading(true);
     try {
+      if (isOffline) {
+        const action = createPendingAction(
+          taskInput.id ? "update-task" : "create-task",
+          {
+            title: taskInput.title,
+            listId: taskInput.listId,
+            dueDate: taskInput.dueDate,
+            dueTime: taskInput.dueTime,
+            startTime: taskInput.startTime,
+            endTime: taskInput.endTime,
+            repeat: taskInput.repeat,
+            completed: taskInput.completed,
+            id: taskInput.id,
+          },
+          optimisticTask.id,
+        );
+        await enqueuePendingAction(action);
+        await refreshPendingCount();
+        showToast("Saved locally — will sync when online");
+        return true;
+      }
+
       if (taskInput.id) {
         // Update
         await taskApi.updateTask(taskInput.id, {
@@ -263,6 +319,8 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
           listId:    taskInput.listId,
           dueDate:   taskInput.dueDate,
           dueTime:   taskInput.dueTime,
+          startTime: taskInput.startTime,
+          endTime:   taskInput.endTime,
           repeat:    taskInput.repeat,
           completed: taskInput.completed,
         });
@@ -274,13 +332,14 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
           listId:  taskInput.listId,
           dueDate: taskInput.dueDate,
           dueTime: taskInput.dueTime,
+          startTime: taskInput.startTime,
+          endTime: taskInput.endTime,
           repeat:  taskInput.repeat,
         });
         showToast("Task added ✓");
       }
 
       await fetchTasks();  // refresh with correct status
-      goBack();
       return true;
     } catch (err) {
       const e = err as { message?: string };
@@ -289,7 +348,7 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
     } finally {
       setIsLoading(false);
     }
-  }, [fetchTasks, goBack, showToast]);
+  }, [fetchTasks, goBack, refreshPendingCount, showToast]);
 
   // ─── Undo delete ──────────────────────────────────────────────────────────────
 const undoDelete = useCallback(async () => {
@@ -428,7 +487,8 @@ const updateList = useCallback(async (
     fetchLists,
     refreshAll,
     updateList,  // ← new API-integrated list update
-    isFromCache, // ← indicates if tasks are from cache (for UI hints) 
+    isFromCache, // ← indicates if tasks are from cache (for UI hints)
+    offlinePendingCount,
 
   };
 }

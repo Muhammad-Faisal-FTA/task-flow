@@ -3,6 +3,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AuthProvider }    from "@/hooks/useAuth";
+import { ThemeProvider }   from "@/hooks/useTheme";
 import { PushSWRegistrar } from "@/components/PushSWRegistrar";
 
 export const metadata: Metadata = {
@@ -57,11 +58,13 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body suppressHydrationWarning>
-        <AuthProvider>
-          {/* Registers sw-push.js for push notification handling */}
-          <PushSWRegistrar />
-          {children}
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            {/* Registers sw-push.js for push notification handling */}
+            <PushSWRegistrar />
+            {children}
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

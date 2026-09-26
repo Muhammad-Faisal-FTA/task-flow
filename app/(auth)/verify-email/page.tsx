@@ -1,200 +1,44 @@
-// app/(auth)/verify-email/page.tsx
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useState } from "react";
 import Link from "next/link";
-import { Loader2, CheckCircle2, XCircle, MailOpen } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Mail, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthAlert } from "@/components/auth/AuthAlert";
 import { AuthButton } from "@/components/auth/AuthButton";
+import { AuthInput } from "@/components/auth/AuthInput";
 
-// ─── States ───────────────────────────────────────────────────────────────────
-type VerifyState = "loading" | "success" | "expired" | "invalid" | "missing";
-
-// ─── Inner Component (uses useSearchParams) ──────────────────────────────────
-function VerifyEmailContent() {
-  const searchParams = useSearchParams();
+function OtpForm() {
+  const params = useSearchParams();
   const { verifyEmail } = useAuth();
-  const token = searchParams.get("token");
-  const [state, setState] = useState<VerifyState>(
-    !token ? "missing" : "loading",
-  );
-  const [message, setMessage] = useState<string>("");
+  const [email, setEmail] = useState(params?.get("email") ?? "");
+  const [otp, setOtp] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    // Skip effect if no token or already in missing state
-    if (!token || state === "missing") {
-      return;
-    }
-
-    // Verify on mount — runs once
-    async function verify() {
-      try {
-        const result = await verifyEmail(token!);
-        setMessage(result.message);
-        setState("success");
-      } catch (err) {
-        const error = err as Error & { status?: number };
-
-        if (error.status === 410) {
-          setState("expired");
-        } else {
-          setState("invalid");
-        }
-
-        setMessage(error.message ?? "Verification failed.");
-      }
-    }
-
-    verify();
-  }, [token, verifyEmail]);
-
-  // ── Loading ────────────────────────────────────────────────────────────────
-  if (state === "loading") {
-    return (
-      <div className="flex flex-col items-center justify-center py-8 gap-4">
-        <Loader2
-          className="w-10 h-10 animate-spin"
-          style={{ color: "#1E8BC3" }}
-        />
-        <p className="text-[14px]" style={{ color: "#B0C4DE" }}>
-          Verifying your email…
-        </p>
-      </div>
-    );
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setError("");
+    if (!/^\d{6}$/.test(otp)) return setError("Enter the 6-digit OTP.");
+    setLoading(true);
+    try { setSuccess((await verifyEmail(email, otp)).message); }
+    catch (caught) { setError(caught instanceof Error ? caught.message : "Verification failed."); }
+    finally { setLoading(false); }
   }
 
-  // ── Success ────────────────────────────────────────────────────────────────
-  if (state === "success") {
-    return (
-      <>
-        <div className="flex flex-col items-center text-center mb-6">
-          <div
-            className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-            style={{ backgroundColor: "rgba(67,160,71,0.15)" }}
-          >
-            <CheckCircle2 className="w-8 h-8" style={{ color: "#43A047" }} />
-          </div>
-          <h1 className="text-[22px] font-bold text-white mb-2">
-            Email Verified!
-          </h1>
-          <p className="text-[14px]" style={{ color: "#B0C4DE" }}>
-            Your account is now active.
-          </p>
-        </div>
+  if (success) return <div className="text-center space-y-5"><ShieldCheck className="w-14 h-14 mx-auto text-green-500"/><h1 className="text-[22px] font-bold text-white">Email verified</h1><AuthAlert variant="success" message={success}/><Link href="/login"><AuthButton type="button">Continue to Sign In</AuthButton></Link></div>;
 
-        <AuthAlert
-          variant="success"
-          message={
-            message || "Email verified successfully. You can now log in."
-          }
-          className="mb-6"
-        />
-
-        <Link href="/login">
-          <AuthButton type="button">Continue to Sign In</AuthButton>
-        </Link>
-      </>
-    );
-  }
-
-  // ── Expired ────────────────────────────────────────────────────────────────
-  if (state === "expired") {
-    return (
-      <>
-        <div className="flex flex-col items-center text-center mb-6">
-          <div
-            className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-            style={{ backgroundColor: "rgba(245,124,0,0.15)" }}
-          >
-            <MailOpen className="w-8 h-8" style={{ color: "#F57C00" }} />
-          </div>
-          <h1 className="text-[22px] font-bold text-white mb-2">
-            Link Expired
-          </h1>
-          <p className="text-[14px]" style={{ color: "#B0C4DE" }}>
-            Your verification link has expired.
-          </p>
-        </div>
-
-        <AuthAlert
-          variant="error"
-          message="Verification links expire after 24 hours. Please register again to get a new link."
-          className="mb-6"
-        />
-
-        <Link href="/register">
-          <AuthButton type="button">Register Again</AuthButton>
-        </Link>
-
-        <p
-          className="text-center text-[13px] mt-4"
-          style={{ color: "#B0C4DE" }}
-        >
-          Already verified?{" "}
-          <Link
-            href="/login"
-            className="font-semibold"
-            style={{ color: "#29B6F6" }}
-          >
-            Sign in
-          </Link>
-        </p>
-      </>
-    );
-  }
-
-  // ── Invalid / Missing ──────────────────────────────────────────────────────
-  return (
-    <>
-      <div className="flex flex-col items-center text-center mb-6">
-        <div
-          className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-          style={{ backgroundColor: "rgba(229,57,53,0.15)" }}
-        >
-          <XCircle className="w-8 h-8" style={{ color: "#E53935" }} />
-        </div>
-        <h1 className="text-[22px] font-bold text-white mb-2">
-          {state === "missing" ? "No Token Found" : "Invalid Link"}
-        </h1>
-        <p className="text-[14px]" style={{ color: "#B0C4DE" }}>
-          {state === "missing"
-            ? "This page requires a verification token from your email."
-            : "This verification link is invalid or has already been used."}
-        </p>
-      </div>
-
-      <AuthAlert
-        variant="error"
-        message={
-          state === "missing"
-            ? "Please click the verification link sent to your email."
-            : message || "Invalid verification link."
-        }
-        className="mb-6"
-      />
-
-      <Link href="/register">
-        <AuthButton type="button">Back to Register</AuthButton>
-      </Link>
-    </>
-  );
+  return <>
+    <div className="text-center mb-6"><Mail className="w-12 h-12 mx-auto mb-3 text-blue-400"/><h1 className="text-[22px] font-bold text-white">Verify your email</h1><p className="text-[14px] text-slate-300">Enter the 6-digit code sent to your email. It expires in 10 minutes.</p></div>
+    {error && <AuthAlert variant="error" message={error} className="mb-5"/>}
+    <form onSubmit={submit} className="space-y-4">
+      <AuthInput label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required/>
+      <AuthInput label="Verification OTP" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} required/>
+      <AuthButton type="submit" loading={loading}>Verify Email</AuthButton>
+    </form>
+  </>;
 }
 
-// ─── Page (with Suspense boundary) ───────────────────────────────────────────
-export default function VerifyEmailPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex items-center justify-center py-12">
-          <div className="text-[14px]" style={{ color: "#B0C4DE" }}>
-            Loading...
-          </div>
-        </div>
-      }
-    >
-      <VerifyEmailContent />
-    </Suspense>
-  );
-}
+export default function VerifyEmailPage() { return <Suspense fallback={<p className="text-slate-300">Loading...</p>}><OtpForm/></Suspense>; }

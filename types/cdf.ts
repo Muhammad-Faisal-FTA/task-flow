@@ -1,11 +1,11 @@
 // types/cdf.ts
 
-import { Types } from "mongoose";
+type DatabaseId = string;
 
 // ─── CDF Toggle ───────────────────────────────────────────────────────────────
 export interface ICdfSettings {
-  _id:       Types.ObjectId;
-  userId:    Types.ObjectId;
+  id:        DatabaseId;
+  userId:    DatabaseId;
   enabled:   boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -14,11 +14,11 @@ export interface ICdfSettings {
 // ─── Event type ───────────────────────────────────────────────────────────────
 // Single event = one task completion while CDF is ON
 export interface ICdfEvent {
-  _id:          Types.ObjectId;
-  userId:       Types.ObjectId;
-  taskId:       Types.ObjectId;
+  id:           DatabaseId;
+  userId:       DatabaseId;
+  taskId:       DatabaseId;
   taskTitle:    string;
-  listId:       Types.ObjectId;
+  listId:       DatabaseId;
   repeat:       "none" | "daily" | "weekdays" | "weekly" | "monthly" | "yearly";
 
   // Due info — for discipline calculation
@@ -41,8 +41,8 @@ export interface ICdfEvent {
 // ─── Aggregated scores ────────────────────────────────────────────────────────
 // Pre-calculated rolling 30-day scores — updated on every event
 export interface ICdfScore {
-  _id:    Types.ObjectId;
-  userId: Types.ObjectId;
+  id:     DatabaseId;
+  userId: DatabaseId;
 
   // ── Consistency ─────────────────────────────────────────────────────────
   consistencyScore:  number;          // 0–100

@@ -73,13 +73,7 @@ export default function RegisterPage() {
         data.password,
         data.confirmPassword,
       );
-      setSuccessMessage(
-        "Account created! Please check your email to verify your account before signing in.",
-      );
-      // Auto-redirect to login after 5 seconds
-      setTimeout(() => {
-        router.push("/login");
-      }, 5000);
+      router.push(`/verify-email?email=${encodeURIComponent(data.email)}`);
     } catch (err) {
       const error = err as Error & {
         status?: number;
