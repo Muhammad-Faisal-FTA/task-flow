@@ -2,7 +2,6 @@
 // components/task/TaskCard.tsx
 "use client";
 
-import { useState, useEffect } from "react";
 import { CalendarDays, AlertCircle, RepeatIcon } from "lucide-react";
 import { TaskCheckbox } from "@/components/task/TaskCheckbox";
 import { cn } from "@/lib/cn";
@@ -43,25 +42,9 @@ export function TaskCard({
   onClick,
   isToggling = false,
 }: TaskCardProps) {
-  // Controls fade-out + slide-up animation on complete
-  const [isCompleting, setIsCompleting] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
-
   const handleToggle = async (taskId: string) => {
-    if (!task.completed) {
-      // About to be completed — start exit animation
-      setIsCompleting(true);
-      await onToggle(taskId);
-      // Wait for animation then hide
-      setTimeout(() => setIsVisible(false), 600);
-    } else {
-      // Uncompleting — just toggle, no animation
-      await onToggle(taskId);
-    }
+    await onToggle(taskId);
   };
-
-  // Don't render if animated out
-  if (!isVisible) return null;
 
   const dateStr = task.dueDate
     ? formatDisplayDate(task.dueDate, task.status)
@@ -69,21 +52,20 @@ export function TaskCard({
 
   return (
     <div
-      onClick={() => !isCompleting && onClick(task)}
+      onClick={() => onClick(task)}
       className={cn(
         "flex items-start gap-3 rounded-card shadow-card cursor-pointer select-none",
         "transition-all duration-200 active:scale-[0.98]",
-        // Exit animation when completing
-        isCompleting && "opacity-0 -translate-y-2 scale-95 pointer-events-none",
       )}
       style={{
-        backgroundColor: "var(--color-bg-card)",
+        backgroundColor: task.completed
+          ? "color-mix(in srgb, var(--color-bg-card) 70%, var(--color-bg-app))"
+          : "var(--color-bg-card)",
         borderLeft: `3px solid ${LEFT_BORDER[task.status] ?? "var(--color-border-default)"}`,
         padding: "14px 16px",
         marginBottom: "8px",
-        transition: isCompleting
-          ? "opacity 0.5s ease, transform 0.5s ease"
-          : "transform 0.15s ease",
+        opacity: task.completed ? 0.72 : 1,
+        transition: "transform 0.15s ease",
       }}
     >
       {/* Checkbox */}
@@ -105,7 +87,7 @@ export function TaskCard({
               ? "var(--color-text-hint)"
               : "var(--color-text-primary)",
             textDecoration:
-              isCompleting || task.completed ? "line-through" : "none",
+              task.completed ? "line-through" : "none",
             opacity: task.completed ? 0.6 : 1,
           }}
         >

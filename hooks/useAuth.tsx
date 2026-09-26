@@ -37,6 +37,8 @@ interface AuthActions {
   getAccessToken: () => Promise<string | null>;
 }
 
+const CACHED_USER_KEY = "taskflow-cached-user";
+
 export type UseAuthReturn = AuthState & AuthActions;
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -115,6 +117,7 @@ function useAuthState(): UseAuthReturn {
   const [user, setUser]           = useState<AuthUser | null>(null);
   const [accessToken, setToken]   = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isOfflineSession, setIsOfflineSession] = useState(false);
 
   // Refresh timer ref — cleared on logout
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -132,10 +135,15 @@ function useAuthState(): UseAuthReturn {
         );
         setInMemoryToken(data.accessToken);
         setToken(data.accessToken);
+        setIsOfflineSession(false);
         scheduleRefresh(); // Schedule next refresh
       } catch {
-        // Refresh failed — session expired, force logout
-        handleExpiredSession();
+        if (typeof navigator !== "undefined" && !navigator.onLine) {
+          setIsOfflineSession(true);
+        } else {
+          // Refresh failed online — session expired, force logout
+          handleExpiredSession();
+        }
       }
     }, delayMs);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -175,10 +183,21 @@ function useAuthState(): UseAuthReturn {
         );
 
         setUser(userRes.user);
+        localStorage.setItem(CACHED_USER_KEY, JSON.stringify(userRes.user));
         scheduleRefresh();
       } catch {
-        // No valid session — user needs to log in
-        setUser(null);
+        const cachedUser = localStorage.getItem(CACHED_USER_KEY);
+        if (cachedUser) {
+          try {
+            setUser(JSON.parse(cachedUser) as AuthUser);
+            setIsOfflineSession(true);
+          } catch {
+            localStorage.removeItem(CACHED_USER_KEY);
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
         setToken(null);
         setInMemoryToken(null);
       } finally {
@@ -210,7 +229,11 @@ function useAuthState(): UseAuthReturn {
         setToken(data.accessToken);
         scheduleRefresh();
       } catch {
-        handleExpiredSession();
+        if (typeof navigator !== "undefined" && !navigator.onLine) {
+          setIsOfflineSession(true);
+        } else {
+          handleExpiredSession();
+        }
       }
     };
 
@@ -234,6 +257,10 @@ function useAuthState(): UseAuthReturn {
       scheduleRefresh();
       return data.accessToken;
     } catch {
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        setIsOfflineSession(true);
+        return null;
+      }
       handleExpiredSession();
       return null;
     }
@@ -254,7 +281,9 @@ function useAuthState(): UseAuthReturn {
 
     setInMemoryToken(data.accessToken);
     setToken(data.accessToken);
+    setIsOfflineSession(false);
     setUser(data.user);
+    localStorage.setItem(CACHED_USER_KEY, JSON.stringify(data.user));
     scheduleRefresh();
   }, [scheduleRefresh]);
 
@@ -287,6 +316,8 @@ function useAuthState(): UseAuthReturn {
       setUser(null);
       setToken(null);
       setInMemoryToken(null);
+      setIsOfflineSession(false);
+      localStorage.removeItem(CACHED_USER_KEY);
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     }
   }, []);
@@ -329,7 +360,7 @@ function useAuthState(): UseAuthReturn {
     user,
     accessToken,
     isLoading,
-    isAuthenticated: !!user && !!accessToken,
+    isAuthenticated: !!user && (!!accessToken || isOfflineSession),
 
     // Actions
     login,

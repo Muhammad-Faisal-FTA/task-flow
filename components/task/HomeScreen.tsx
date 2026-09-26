@@ -138,7 +138,7 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
   const isEmpty = tasks.length === 0;
   const today = new Date().toISOString().split("T")[0];
   const timedTodayTasks = tasks.filter(
-    (task) => task.dueDate === today && task.dueTime && !task.completed,
+    (task) => task.dueDate === today && task.dueTime,
   );
 
   return (
@@ -296,7 +296,12 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
           </div>
         ) : (
           <>
-            <TaskTimeline tasks={timedTodayTasks} onTaskClick={openTask} />
+            <TaskTimeline
+              tasks={timedTodayTasks}
+              onTaskClick={openTask}
+              onToggle={toggle}
+              isToggling={isToggling}
+            />
             {SECTIONS.map(({ label, status }) => {
             const sectionTasks = tasks.filter(
               (t) =>

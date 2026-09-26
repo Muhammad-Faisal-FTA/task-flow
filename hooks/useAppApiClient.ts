@@ -118,7 +118,7 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
     const data = await taskApi.getTasks({
       listId:           params?.listId ?? filterListId ?? undefined,
       grouped:          true,
-      includeCompleted: false,
+      includeCompleted: true,
     });
 
     const dtos: TaskDTO[] = isGroupedTasks(data)
@@ -205,7 +205,7 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
       const data = await taskApi.getTasks({
         listId:           id ?? undefined,
         grouped:          true,
-        includeCompleted: false,
+        includeCompleted: true,
       });
       const dtos: TaskDTO[] = isGroupedTasks(data)
         ? flattenGrouped(data)

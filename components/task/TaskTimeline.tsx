@@ -1,5 +1,6 @@
 "use client";
 
+import { TaskCheckbox } from "@/components/task/TaskCheckbox";
 import type { TaskDTO } from "@/types/task";
 
 const DAY_START = 0;
@@ -9,6 +10,8 @@ const HOUR_HEIGHT = 64;
 interface TaskTimelineProps {
   tasks: TaskDTO[];
   onTaskClick: (task: TaskDTO) => void;
+  onToggle: (taskId: string) => Promise<void>;
+  isToggling: (taskId: string) => boolean;
 }
 
 function toMinutes(value: string | null | undefined, fallback: number) {
@@ -24,9 +27,9 @@ function formatHour(hour: number) {
   return `${hour % 12 || 12} ${period}`;
 }
 
-export function TaskTimeline({ tasks, onTaskClick }: TaskTimelineProps) {
+export function TaskTimeline({ tasks, onTaskClick, onToggle, isToggling }: TaskTimelineProps) {
   const timedTasks = tasks
-    .filter((task) => task.dueTime && !task.completed)
+    .filter((task) => task.dueTime)
     .map((task) => {
       const start = toMinutes(task.startTime ?? task.dueTime, DAY_START);
       const end = Math.max(
@@ -114,29 +117,46 @@ export function TaskTimeline({ tasks, onTaskClick }: TaskTimelineProps) {
             const left = `calc(${(lane * 100) / laneCount}% + ${gap / 2}px)`;
 
             return (
-              <button
+              <div
                 key={task.id}
-                type="button"
                 onClick={() => onTaskClick(task)}
-                className="absolute overflow-hidden rounded-[8px] px-2 py-1 text-left shadow-card transition-transform active:scale-[0.98]"
+                className="absolute flex gap-2 overflow-hidden rounded-[8px] px-2 py-1 text-left shadow-card transition-transform active:scale-[0.98]"
                 style={{
                   top,
                   height: blockHeight,
                   left,
                   width,
                   zIndex: 2,
-                  backgroundColor: "var(--color-primary)",
+                  backgroundColor: task.completed
+                    ? "color-mix(in srgb, var(--color-primary) 35%, var(--color-bg-card))"
+                    : "var(--color-primary)",
                   color: "var(--color-text-primary)",
+                  opacity: task.completed ? 0.72 : 1,
                 }}
               >
-                <span className="block truncate font-semibold" style={{ fontSize: "var(--text-sm)" }}>
-                  {task.title}
-                </span>
-                <span className="block truncate" style={{ fontSize: "var(--text-xs)", opacity: 0.8 }}>
-                  {task.dueTime}
-                  {task.endTime ? ` - ${task.endTime}` : " - 1 hr"}
-                </span>
-              </button>
+                <TaskCheckbox
+                  taskId={task.id}
+                  completed={task.completed}
+                  onToggle={onToggle}
+                  isToggling={isToggling(task.id)}
+                />
+                <div className="min-w-0 flex-1">
+                  <span
+                    className="block truncate font-semibold"
+                    style={{
+                      fontSize: "var(--text-sm)",
+                      textDecoration: task.completed ? "line-through" : "none",
+                      opacity: task.completed ? 0.6 : 1,
+                    }}
+                  >
+                    {task.title}
+                  </span>
+                  <span className="block truncate" style={{ fontSize: "var(--text-xs)", opacity: 0.8 }}>
+                    {task.dueTime}
+                    {task.endTime ? ` - ${task.endTime}` : " - 1 hr"}
+                  </span>
+                </div>
+              </div>
             );
           })}
         </div>
