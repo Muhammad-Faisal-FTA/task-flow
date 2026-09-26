@@ -60,9 +60,11 @@ export function TaskCheckbox({
         height: "22px",
         borderRadius: "6px",
         border: `2px solid ${
-          localChecked ? "var(--color-success)" : "var(--color-border-default)"
+          localChecked ? "var(--color-success)" : "var(--color-text-secondary)"
         }`,
-        backgroundColor: localChecked ? "var(--color-success)" : "transparent",
+        backgroundColor: localChecked
+          ? "var(--color-success)"
+          : "rgba(255, 255, 255, 0.08)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
