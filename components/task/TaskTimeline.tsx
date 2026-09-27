@@ -27,6 +27,12 @@ function formatHour(hour: number) {
   return `${hour % 12 || 12} ${period}`;
 }
 
+function formatTime(value: string) {
+  const [hour, minute] = value.split(":").map(Number);
+  const period = hour >= 12 ? "PM" : "AM";
+  return `${hour % 12 || 12}:${minute.toString().padStart(2, "0")} ${period}`;
+}
+
 export function TaskTimeline({ tasks, onTaskClick, onToggle, isToggling }: TaskTimelineProps) {
   const timedTasks = tasks
     .filter((task) => task.dueTime)
@@ -152,8 +158,8 @@ export function TaskTimeline({ tasks, onTaskClick, onToggle, isToggling }: TaskT
                     {task.title}
                   </span>
                   <span className="block truncate" style={{ fontSize: "var(--text-xs)", opacity: 0.8 }}>
-                    {task.dueTime}
-                    {task.endTime ? ` - ${task.endTime}` : " - 1 hr"}
+                    {formatTime(task.dueTime!)}
+                    {task.endTime ? ` - ${formatTime(task.endTime)}` : " - 1 hr"}
                   </span>
                 </div>
               </div>

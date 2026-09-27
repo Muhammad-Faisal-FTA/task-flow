@@ -2,6 +2,7 @@ import { and, asc, count, desc, eq, ilike, isNotNull, isNull, lt, ne, sql } from
 import { db } from "@/db";
 import { taskLists, tasks } from "@/db/schema";
 import { deriveStatus, parseDueDate, formatDueDate } from "@/utils/deriveStatus";
+import { nextRepeatDate } from "@/utils/repeatDate";
 import { groupTasksByStatus } from "@/utils/taskGrouping";
 import type { TaskDTO, TaskListDTO, GroupedTasks, CreateTaskInput, UpdateTaskInput, CreateListInput, UpdateListInput, TaskQueryParams } from "@/types/task";
 
@@ -41,11 +42,16 @@ export async function deleteList(userId: string, id: string) {
 }
 export async function getUserTasks(userId: string, params: TaskQueryParams = {}): Promise<GroupedTasks | TaskDTO[]> {
   const filters = [eq(tasks.userId, userId), isNull(tasks.deletedAt)];
-  if (params.listId) filters.push(eq(tasks.listId, params.listId)); if (params.includeCompleted === false) filters.push(eq(tasks.completed, false)); if (params.search?.trim()) filters.push(ilike(tasks.title, `%${params.search.trim()}%`));
-  const result = (await db.select().from(tasks).where(and(...filters)).orderBy(asc(tasks.dueDate), asc(tasks.createdAt))).map(taskDto);
+  if (params.listId) filters.push(eq(tasks.listId, params.listId)); if (params.search?.trim()) filters.push(ilike(tasks.title, `%${params.search.trim()}%`));
+  const rows = await db.select().from(tasks).where(and(...filters)).orderBy(asc(tasks.dueDate), asc(tasks.createdAt));
+  const refreshedRows = await Promise.all(rows.map(resetDueRepeatingTask));
+  const visibleRows = params.includeCompleted === false
+    ? refreshedRows.filter((task) => !task.completed)
+    : refreshedRows;
+  const result = visibleRows.map(taskDto);
   return params.grouped === false ? result : groupTasksByStatus(result);
 }
-export async function getTaskById(userId: string, id: string) { const task = await ownedTask(userId, id); if (!task) throw new Error("TASK_NOT_FOUND"); return taskDto(task); }
+export async function getTaskById(userId: string, id: string) { const task = await ownedTask(userId, id); if (!task) throw new Error("TASK_NOT_FOUND"); return taskDto(await resetDueRepeatingTask(task)); }
 export async function createTask(userId: string, input: CreateTaskInput) {
   if (!(await ownedList(userId, input.listId))) throw new Error("LIST_NOT_FOUND");
   const [task] = await db.insert(tasks).values({ userId, listId: input.listId, title: input.title.trim(), dueDate: parseDueDate(input.dueDate), dueTime: input.dueTime ?? null, startTime: input.startTime ?? input.dueTime ?? null, endTime: input.endTime ?? null, repeat: input.repeat ?? "none", links: input.links ?? [] }).returning(); return taskDto(task);
@@ -55,17 +61,22 @@ export async function updateTask(userId: string, id: string, input: UpdateTaskIn
   const completed = input.completed ?? current.completed;
   const [task] = await db.update(tasks).set({ ...(input.listId && { listId: input.listId }), ...(input.title !== undefined && { title: input.title.trim() }), ...(input.dueDate !== undefined && { dueDate: parseDueDate(input.dueDate) }), ...(input.dueTime !== undefined && { dueTime: input.dueTime }), ...(input.startTime !== undefined && { startTime: input.startTime }), ...(input.endTime !== undefined && { endTime: input.endTime }), ...(input.repeat && { repeat: input.repeat }), ...(input.links && { links: input.links }), ...(input.completed !== undefined && { completed, completedAt: completed ? new Date() : null }), updatedAt: new Date() }).where(eq(tasks.id, id)).returning(); return taskDto(task);
 }
-function nextRepeatDate(date: Date, repeat: Task["repeat"]): Date {
-  const next = new Date(date);
-  if (repeat === "daily") next.setDate(next.getDate() + 1);
-  if (repeat === "weekdays") {
-    do next.setDate(next.getDate() + 1);
-    while (next.getDay() === 0 || next.getDay() === 6);
-  }
-  if (repeat === "weekly") next.setDate(next.getDate() + 7);
-  if (repeat === "monthly") next.setMonth(next.getMonth() + 1);
-  if (repeat === "yearly") next.setFullYear(next.getFullYear() + 1);
-  return next;
+async function resetDueRepeatingTask(task: Task): Promise<Task> {
+  if (!task.completed || task.repeat === "none" || !task.dueDate) return task;
+
+  const nextDueDate = nextRepeatDate(task.dueDate, task.repeat);
+  const today = new Date();
+  const todayDate = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+  if (nextDueDate > todayDate) return task;
+
+  const [updated] = await db.update(tasks).set({
+    completed: false,
+    completedAt: null,
+    dueDate: nextDueDate,
+    updatedAt: new Date(),
+  }).where(and(eq(tasks.id, task.id), eq(tasks.completed, true))).returning();
+
+  return updated ?? task;
 }
 
 export async function toggleTaskComplete(userId: string, id: string) {
@@ -78,21 +89,6 @@ export async function toggleTaskComplete(userId: string, id: string) {
     completedAt: completing ? new Date() : null,
     updatedAt: new Date(),
   }).where(eq(tasks.id, id)).returning();
-
-  if (completing && t.repeat !== "none" && t.dueDate) {
-    await db.insert(tasks).values({
-      userId: t.userId,
-      listId: t.listId,
-      title: t.title,
-      completed: false,
-      dueDate: nextRepeatDate(t.dueDate, t.repeat),
-      dueTime: "00:00",
-      startTime: "00:00",
-      endTime: t.endTime,
-      repeat: t.repeat,
-      links: t.links,
-    });
-  }
 
   return taskDto(updated);
 }
