@@ -158,7 +158,7 @@ export function TaskTimeline({ tasks, onTaskClick, onToggle, isToggling }: TaskT
                     {task.title}
                   </span>
                   <span className="block truncate" style={{ fontSize: "var(--text-xs)", opacity: 0.8 }}>
-                    {formatTime(task.dueTime!)}
+                    {formatTime(task.startTime ?? task.dueTime!)}
                     {task.endTime ? ` - ${formatTime(task.endTime)}` : " - 1 hr"}
                   </span>
                 </div>

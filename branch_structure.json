@@ -1,0 +1,48 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "auth",
+    "cdf-feture",
+    "crud-operation",
+    "development",
+    "main",
+    "notification",
+    "pwa",
+    "searchFeat",
+    "taskTogle",
+    "ui-fixes",
+    "ui-wire-frame",
+    "ui/ux-improve",
+    "voiceInput"
+  ],
+  "parent": {
+    "auth": "main",
+    "cdf-feture": "main",
+    "crud-operation": "main",
+    "development": "main",
+    "main": null,
+    "notification": "main",
+    "pwa": "main",
+    "searchFeat": "main",
+    "taskTogle": "main",
+    "ui-fixes": "main",
+    "ui-wire-frame": "main",
+    "ui/ux-improve": "main",
+    "voiceInput": "main"
+  },
+  "order": [
+    "main",
+    "auth",
+    "cdf-feture",
+    "crud-operation",
+    "development",
+    "notification",
+    "pwa",
+    "searchFeat",
+    "taskTogle",
+    "ui-fixes",
+    "ui-wire-frame",
+    "ui/ux-improve",
+    "voiceInput"
+  ]
+}
