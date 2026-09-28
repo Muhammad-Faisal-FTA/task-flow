@@ -49,18 +49,31 @@ export function TaskTimeline({ tasks, onTaskClick, onToggle, isToggling }: TaskT
 
   if (timedTasks.length === 0) return null;
 
-  const lanes: { end: number }[] = [];
-  const positioned = timedTasks.map((item) => {
-    let lane = lanes.findIndex((entry) => entry.end <= item.start);
-    if (lane === -1) {
-      lane = lanes.length;
-      lanes.push({ end: item.end });
+  const overlapGroups: { end: number; items: typeof timedTasks }[] = [];
+  for (const item of timedTasks) {
+    const group = overlapGroups[overlapGroups.length - 1];
+    if (!group || item.start >= group.end) {
+      overlapGroups.push({ end: item.end, items: [item] });
     } else {
-      lanes[lane].end = item.end;
+      group.items.push(item);
+      group.end = Math.max(group.end, item.end);
     }
-    return { ...item, lane };
+  }
+  const positioned = overlapGroups.flatMap(({ items }) => {
+    const lanes: { end: number }[] = [];
+    const assigned = items.map((item) => {
+      let lane = lanes.findIndex((entry) => entry.end <= item.start);
+      if (lane === -1) {
+        lane = lanes.length;
+        lanes.push({ end: item.end });
+      } else {
+        lanes[lane].end = item.end;
+      }
+      return { ...item, lane };
+    });
+    const laneCount = Math.max(1, lanes.length);
+    return assigned.map((item) => ({ ...item, laneCount }));
   });
-  const laneCount = Math.max(1, lanes.length);
   const height = (DAY_END - DAY_START) * (HOUR_HEIGHT / 60);
 
   return (
@@ -115,7 +128,7 @@ export function TaskTimeline({ tasks, onTaskClick, onToggle, isToggling }: TaskT
             />
           ))}
 
-          {positioned.map(({ task, start, end, lane }) => {
+          {positioned.map(({ task, start, end, lane, laneCount }) => {
             const top = Math.max(0, start - DAY_START) * (HOUR_HEIGHT / 60);
             const blockHeight = Math.max(30, end - start) * (HOUR_HEIGHT / 60);
             const gap = 4;
