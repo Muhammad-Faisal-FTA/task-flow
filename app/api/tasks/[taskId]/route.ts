@@ -59,6 +59,12 @@ const UpdateTaskSchema = z.object({
     .enum(["none", "daily", "weekdays", "weekly", "monthly", "yearly"])
     .optional(),
 
+  links: z.array(z.object({
+    id: z.string().min(1),
+    name: z.string().min(1).max(100),
+    url: z.string().url(),
+  })).optional(),
+
   completed: z
     .boolean()
     .optional(),

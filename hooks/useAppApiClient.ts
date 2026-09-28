@@ -278,7 +278,7 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
       repeat: taskInput.repeat,
       status: "nodate",
       hasRepeatIcon: taskInput.repeat !== "none",
-      links: [],
+      links: taskInput.links ?? [],
     };
 
     setTasks(prev => {
@@ -302,6 +302,7 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
             endTime: taskInput.endTime,
             repeat: taskInput.repeat,
             completed: taskInput.completed,
+            links: taskInput.links ?? [],
             id: taskInput.id,
           },
           optimisticTask.id,
@@ -323,6 +324,7 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
           endTime:   taskInput.endTime,
           repeat:    taskInput.repeat,
           completed: taskInput.completed,
+          links:     taskInput.links ?? [],
         });
         showToast("Task updated ✓");
       } else {
@@ -335,6 +337,7 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
           startTime: taskInput.startTime,
           endTime: taskInput.endTime,
           repeat:  taskInput.repeat,
+          links:   taskInput.links ?? [],
         });
         showToast("Task added ✓");
       }

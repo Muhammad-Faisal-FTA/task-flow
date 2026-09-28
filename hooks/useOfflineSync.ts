@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { taskApi } from "@/services/apiService";
+import type { TaskLink } from "@/types/task";
 import {
   getPendingActions,
   removePendingAction,
@@ -45,6 +46,7 @@ export function useOfflineSync(
             dueDate: (action.payload.dueDate as string | null | undefined) ?? null,
             dueTime: (action.payload.dueTime as string | null | undefined) ?? null,
             repeat: action.payload.repeat as "none" | "daily" | "weekdays" | "weekly" | "monthly" | "yearly" | undefined,
+            links: action.payload.links as TaskLink[] | undefined,
           });
           if (action.entityId) syncedIds.set(action.entityId, created.id);
         } else if (action.type === "update-task" && action.entityId) {
@@ -56,6 +58,7 @@ export function useOfflineSync(
             dueTime: (action.payload.dueTime as string | null | undefined) ?? null,
             repeat: action.payload.repeat as "none" | "daily" | "weekdays" | "weekly" | "monthly" | "yearly" | undefined,
             completed: Boolean(action.payload.completed),
+            links: action.payload.links as TaskLink[] | undefined,
           });
         } else {
           continue;
