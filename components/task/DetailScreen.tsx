@@ -21,6 +21,7 @@ import { LinksSection } from "@/components/task/LinksSection";
 import { cn } from "@/lib/cn";
 import { REPEAT_OPTIONS } from "@/lib/data";
 import type { Task, TaskList } from "@/types";
+import type { TaskPriority } from "@/types/task";
 import { TaskLink } from "@/types/task";
 
 
@@ -126,7 +127,11 @@ export function DetailScreen({ state }: DetailScreenProps) {
 
   useEffect(() => {
     if (selectedTask) {
-      setForm({ ...selectedTask });
+      setForm({
+        ...selectedTask,
+        priority: selectedTask.priority ?? "C",
+        cdfTracking: selectedTask.cdfTracking ?? true,
+      });
       setOpenPicker(null);
     }
   }, [selectedTask]);
@@ -152,6 +157,8 @@ export function DetailScreen({ state }: DetailScreenProps) {
         title: form.title,
         listId: form.listId,
         completed: form.completed,
+        priority: form.priority ?? "C",
+        cdfTracking: form.cdfTracking ?? true,
         dueDate: form.dueDate,
         dueTime: form.dueTime,
         startTime: form.startTime ?? form.dueTime,
@@ -281,6 +288,41 @@ export function DetailScreen({ state }: DetailScreenProps) {
               Done ✓
             </span>
           )}
+        </div>
+
+        <div style={{ marginBottom: "20px" }}>
+          <SelectField
+            label="Priority"
+            value={form.priority ?? "C"}
+            options={(["A", "B", "C", "D"] as TaskPriority[]).map((priority) => ({
+              value: priority,
+              label: `${priority} priority`,
+            }))}
+            onChange={(value) => update("priority", value as TaskPriority)}
+          />
+        </div>
+
+        <div
+          className={rowCls}
+          onClick={() => update("cdfTracking", !(form.cdfTracking ?? true))}
+          style={{
+            marginBottom: "20px",
+            backgroundColor: "var(--color-bg-card)",
+            border: "1px solid var(--color-border-default)",
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <Checkbox
+              checked={form.cdfTracking ?? true}
+              onChange={() => update("cdfTracking", !(form.cdfTracking ?? true))}
+            />
+            <span style={{ fontSize: "var(--text-base)", color: "var(--color-text-secondary)" }}>
+              Track this task in CDF
+            </span>
+          </div>
+          <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-hint)" }}>
+            {(form.cdfTracking ?? true) ? "ON" : "OFF"}
+          </span>
         </div>
 
         {/* Due date */}

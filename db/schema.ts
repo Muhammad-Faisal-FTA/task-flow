@@ -7,6 +7,7 @@ const timestamps = () => ({
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 export const repeatEnum = pgEnum("repeat_frequency", ["none", "daily", "weekdays", "weekly", "monthly", "yearly"]);
+export const taskPriorityEnum = pgEnum("task_priority", ["A", "B", "C", "D"]);
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(), name: varchar("name", { length: 50 }).notNull(),
   email: varchar("email", { length: 320 }).notNull(), password: text("password").notNull(),
@@ -23,7 +24,8 @@ export const tasks = pgTable("tasks", {
   id: uuid("id").defaultRandom().primaryKey(), userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   listId: uuid("list_id").references(() => taskLists.id, { onDelete: "restrict" }).notNull(), title: varchar("title", { length: 255 }).notNull(),
   completed: boolean("completed").default(false).notNull(), completedAt: timestamp("completed_at", { withTimezone: true }), dueDate: date("due_date", { mode: "date" }),
-  dueTime: varchar("due_time", { length: 5 }), startTime: varchar("start_time", { length: 5 }), endTime: varchar("end_time", { length: 5 }), repeat: repeatEnum("repeat").default("none").notNull(), deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  dueTime: varchar("due_time", { length: 5 }), startTime: varchar("start_time", { length: 5 }), endTime: varchar("end_time", { length: 5 }), repeat: repeatEnum("repeat").default("none").notNull(),
+  priority: taskPriorityEnum("priority").default("C").notNull(), cdfTracking: boolean("cdf_tracking").default(true).notNull(), deletedAt: timestamp("deleted_at", { withTimezone: true }),
   links: jsonb("links").$type<TaskLink[]>().default([]).notNull(), ...timestamps(),
 }, (t) => [index("tasks_user_due_idx").on(t.userId, t.dueDate), index("tasks_user_list_due_idx").on(t.userId, t.listId, t.dueDate), check("tasks_due_time_check", sql`${t.dueTime} is null or ${t.dueTime} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'`)]);
 export const pushSubscriptions = pgTable("push_subscriptions", {

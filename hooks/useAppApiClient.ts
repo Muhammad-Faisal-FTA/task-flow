@@ -33,6 +33,8 @@ function taskDtoToUi(dto: TaskDTO): Task {
     dueTime:       dto.dueTime,
     startTime:     dto.startTime,
     endTime:       dto.endTime,
+    priority:      dto.priority ?? "C",
+    cdfTracking:   dto.cdfTracking ?? true,
     repeat:        dto.repeat,
     status:        dto.status,        // ← keep exact status from API
     hasRepeatIcon: dto.repeat !== "none",
@@ -47,6 +49,7 @@ function listDtoToUi(dto: TaskListDTO): TaskList {
     color:        dto.color,
     taskCount:    dto.taskCount,
     overdueCount: dto.overdueCount,
+    isDefault:    dto.isDefault,
   };
 }
 
@@ -251,6 +254,10 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
       completed:     false,
       dueDate:       null,
       dueTime:       null,
+      startTime:     null,
+      endTime:       null,
+      priority:      "C",
+      cdfTracking:   true,
       repeat:        "none",
       status:        "nodate",
       hasRepeatIcon: false,
@@ -275,6 +282,8 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
       dueTime: taskInput.dueTime,
       startTime: taskInput.startTime,
       endTime: taskInput.endTime,
+      priority: taskInput.priority,
+      cdfTracking: taskInput.cdfTracking,
       repeat: taskInput.repeat,
       status: "nodate",
       hasRepeatIcon: taskInput.repeat !== "none",
@@ -300,6 +309,8 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
             dueTime: taskInput.dueTime,
             startTime: taskInput.startTime,
             endTime: taskInput.endTime,
+            priority: taskInput.priority,
+            cdfTracking: taskInput.cdfTracking,
             repeat: taskInput.repeat,
             completed: taskInput.completed,
             links: taskInput.links ?? [],
@@ -322,6 +333,8 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
           dueTime:   taskInput.dueTime,
           startTime: taskInput.startTime,
           endTime:   taskInput.endTime,
+          priority:  taskInput.priority,
+          cdfTracking: taskInput.cdfTracking,
           repeat:    taskInput.repeat,
           completed: taskInput.completed,
           links:     taskInput.links ?? [],
@@ -336,6 +349,8 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
           dueTime: taskInput.dueTime,
           startTime: taskInput.startTime,
           endTime: taskInput.endTime,
+          priority: taskInput.priority,
+          cdfTracking: taskInput.cdfTracking,
           repeat:  taskInput.repeat,
           links:   taskInput.links ?? [],
         });

@@ -5,10 +5,15 @@ import { verifyAccessToken } from "@/lib/jwt";
 import type { AccessTokenPayload } from "@/types/auth";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+// The path-specific params shape is supplied by Next when a route is generated.
+// Auth wrappers forward it unchanged across both static and dynamic routes.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type RouteContext = { params: Promise<any> };
+
 // Route handler that receives verified user payload
 export type AuthenticatedHandler = (
   req: NextRequest,
-  context: { params: Promise<Record<string, string>> },
+  context: RouteContext,
   user: AccessTokenPayload
 ) => Promise<NextResponse>;
 
@@ -27,7 +32,7 @@ function extractBearerToken(req: NextRequest): string | null {
 export function withAuth(handler: AuthenticatedHandler) {
   return async (
     req: NextRequest,
-    context: { params: Promise<Record<string, string>> }
+    context: RouteContext
   ): Promise<NextResponse> => {
     // 1. Extract token
     const token = extractBearerToken(req);
@@ -64,14 +69,14 @@ export function withAuth(handler: AuthenticatedHandler) {
 // user will be null if no valid token present
 export type OptionalAuthHandler = (
   req: NextRequest,
-  context: { params: Promise<Record<string, string>> },
+  context: RouteContext,
   user: AccessTokenPayload | null
 ) => Promise<NextResponse>;
 
 export function withOptionalAuth(handler: OptionalAuthHandler) {
   return async (
     req: NextRequest,
-    context: { params: Promise<Record<string, string>> }
+    context: RouteContext
   ): Promise<NextResponse> => {
     const token = extractBearerToken(req);
 

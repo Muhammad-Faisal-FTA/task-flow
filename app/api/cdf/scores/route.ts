@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 // ─── GET /api/cdf/scores ──────────────────────────────────────────────────────
 const getHandler = async (
   _req: NextRequest,
-  _ctx: { params: Record<string, string> },
+  _ctx: { params: Promise<Record<string, string>> },
   user: AccessTokenPayload
 ): Promise<NextResponse> => {
   try {

@@ -54,9 +54,14 @@ export function useAppState() {
       completed: false,
       dueDate: new Date().toISOString().split("T")[0],
       dueTime: null,
+      startTime: null,
+      endTime: null,
+      priority: "C",
+      cdfTracking: true,
       repeat: "none",
       status: "today",
       hasRepeatIcon: false,
+      links: [],
     };
     setSelectedTask(blank);
     navigate("detail");

@@ -63,7 +63,7 @@ const withPWA = withPWAInit({
 
     // App shell / navigation pages — offline-first
     {
-      urlPattern: ({ request }) => request.mode === "navigate",
+      urlPattern: (options: { request: Request }) => options.request.mode === "navigate",
       handler: "NetworkFirst",
       options: {
         cacheName: "pages-cache",

@@ -50,6 +50,8 @@ const CreateTaskSchema = z.object({
 
   startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(),
   endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(),
+  priority: z.enum(["A", "B", "C", "D"]).optional(),
+  cdfTracking: z.boolean().optional(),
 
   repeat: z
     .enum(["none", "daily", "weekdays", "weekly", "monthly", "yearly"])
@@ -66,7 +68,7 @@ const CreateTaskSchema = z.object({
 // ─── GET /api/tasks ───────────────────────────────────────────────────────────
 const getHandler = async (
   req:  NextRequest,
-  _ctx: { params: Record<string, string> },
+  _ctx: { params: Promise<Record<string, string>> },
   user: AccessTokenPayload
 ): Promise<NextResponse> => {
   try {
@@ -106,7 +108,7 @@ const getHandler = async (
 // ─── POST /api/tasks ──────────────────────────────────────────────────────────
 const postHandler = async (
   req:  NextRequest,
-  _ctx: { params: Record<string, string> },
+  _ctx: { params: Promise<Record<string, string>> },
   user: AccessTokenPayload
 ): Promise<NextResponse> => {
   try {

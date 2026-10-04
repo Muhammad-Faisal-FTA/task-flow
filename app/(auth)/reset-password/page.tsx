@@ -35,7 +35,7 @@ type ResetPasswordFormData = z.infer<typeof ResetPasswordSchema>;
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const { resetPassword } = useAuth();
-  const token = searchParams.get("token");
+  const token = searchParams?.get("token");
 
   const [serverError, setServerError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);

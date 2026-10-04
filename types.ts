@@ -6,8 +6,8 @@
 // Re-exports + legacy UI types
 // Bridges old component imports (@/types) with new DTO types (@/types/task)
 
-export type { TaskStatus, RepeatFrequency} from "@/types/task";
-import type { TaskLink } from "@/types/task";
+export type { TaskStatus, RepeatFrequency, TaskPriority} from "@/types/task";
+import type { TaskLink, TaskStatus } from "@/types/task";
 
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -24,6 +24,8 @@ export interface Task {
   dueTime:       string | null;   // "HH:MM"
   startTime?:    string | null;   // "HH:MM" — optional timeline start
   endTime?:      string | null;   // "HH:MM" — optional timeline end
+  priority?:     import("@/types/task").TaskPriority;
+  cdfTracking?:  boolean;
   repeat:        "none" | "daily" | "weekdays" | "weekly" | "monthly" | "yearly";
   status:        "overdue" | "today" | "tomorrow" | "next_week" | "future" | "nodate";
   hasRepeatIcon: boolean;
@@ -37,10 +39,12 @@ export interface TaskList {
   color:        string;
   taskCount:    number;
   overdueCount: number;
+  isDefault?:   boolean;
 }
 // ─── UI TaskSection type ─────────────────────────────────────────────────────
 export interface TaskSection {
-  title: string;
+  label: string;
+  status: TaskStatus;
   tasks: Task[];
 }
 

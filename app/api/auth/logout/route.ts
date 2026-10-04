@@ -10,7 +10,7 @@ import type { AccessTokenPayload } from "@/types/auth";
 // This prevents logout CSRF attacks
 const handler = async (
   _req: NextRequest,
-  _ctx: { params: Record<string, string> },
+  _ctx: { params: Promise<Record<string, string>> },
   _user: AccessTokenPayload
 ): Promise<NextResponse> => {
   // Clear the httpOnly refresh token cookie

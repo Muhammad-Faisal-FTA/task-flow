@@ -1,3 +1,4 @@
+import { describe, expect, it } from "@jest/globals";
 import { createPendingAction, getPendingActionSummary } from "@/lib/offlineActions";
 
 describe("offline action helpers", () => {
