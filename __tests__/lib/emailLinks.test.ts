@@ -1,3 +1,4 @@
+import { describe, expect, it } from "@jest/globals";
 import { buildAppUrl } from "@/lib/emailLinks";
 
 describe("email link builder", () => {

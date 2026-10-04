@@ -2,7 +2,8 @@
 "use client";
 
 import { Search } from "lucide-react";
-import type { TaskDTO, TaskListDTO } from "@/types/task";
+import type { TaskDTO } from "@/types/task";
+import type { TaskList } from "@/types";
 
 // ─── Status badge config ──────────────────────────────────────────────────────
 const STATUS_CONFIG: Record<
@@ -82,7 +83,7 @@ function ResultCard({
   onClick,
 }: {
   task: TaskDTO;
-  list?: TaskListDTO;
+  list?: TaskList;
   query: string;
   onClick: (task: TaskDTO) => void;
 }) {
@@ -195,7 +196,7 @@ function ResultCard({
 interface SearchResultsProps {
   query: string;
   results: TaskDTO[];
-  lists: TaskListDTO[];
+  lists: TaskList[];
   isSearching: boolean;
   hasSearched: boolean;
   onTaskClick: (task: TaskDTO) => void;
@@ -304,9 +305,7 @@ export function SearchResults({
         <ResultCard
           key={task.id}
           task={task}
-          list={
-            lists.find((l) => l.id === task.listId) as TaskListDTO | undefined
-          }
+          list={lists.find((l) => l.id === task.listId)}
           query={query}
           onClick={onTaskClick}
         />

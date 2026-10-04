@@ -102,11 +102,11 @@ export function checkRateLimit(
 //   export const POST = withRateLimit(RATE_LIMIT_PRESETS.auth, handler)
 export function withRateLimit(
   config: RateLimitConfig,
-  handler: (req: NextRequest, context: { params: Record<string, string> }) => Promise<NextResponse>
+  handler: (req: NextRequest, context: RouteContext) => Promise<NextResponse>
 ) {
   return async (
     req: NextRequest,
-    context: { params: Record<string, string> }
+    context: RouteContext
   ): Promise<NextResponse> => {
     const ip  = getClientIp(req);
     const key = `${ip}:${req.nextUrl.pathname}`;
@@ -148,11 +148,11 @@ export function withRateLimit(
 // Convenience wrapper for protected + rate-limited routes
 // Usage:
 //   export const POST = withRateLimitedAuth(RATE_LIMIT_PRESETS.auth, handler)
-import { withAuth, AuthenticatedHandler } from "./authMiddleware";
+import { withAuth, type AuthenticatedHandler, type RouteContext } from "./authMiddleware";
 
 export function withRateLimitedAuth(
   config: RateLimitConfig,
   handler: AuthenticatedHandler
 ) {
-  return withRateLimit(config, withAuth(handler) as any);
+  return withRateLimit(config, withAuth(handler));
 }

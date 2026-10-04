@@ -10,10 +10,10 @@
     "test": "jest",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
-    "lint": "eslint"
-    ,"db:generate": "drizzle-kit generate"
-    ,"db:migrate": "drizzle-kit migrate"
-    ,"db:studio": "drizzle-kit studio"
+    "lint": "eslint",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -24,10 +24,10 @@
     "drizzle-orm": "^0.44.5",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.7.0",
-    "pg": "^8.16.3",
     "next": "16.2.1",
     "next-pwa": "^5.6.0",
     "nodemailer": "^8.0.4",
+    "pg": "^8.16.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "tailwind-merge": "^3.5.0",
@@ -39,13 +39,16 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/jest": "^30.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/nodemailer": "^7.0.11",
+    "@types/pg": "^8.15.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",
     "@types/web-push": "^3.6.4",
     "cypress": "^15.13.0",
+    "drizzle-kit": "^0.31.4",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "jest": "^30.3.0",
@@ -53,8 +56,6 @@
     "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "ts-jest": "^29.4.6",
-    "typescript": "^5",
-    "drizzle-kit": "^0.31.4",
-    "@types/pg": "^8.15.5"
+    "typescript": "^5"
   }
 }

@@ -145,7 +145,7 @@ export function useTaskToggle(
 
       // 2. If task was just COMPLETED (not uncompleted) + CDF enabled
       //    → create CDF event
-      if (task.completed && isCdfEnabled) {
+      if (task.completed && isCdfEnabled && task.cdfTracking) {
         try {
           const cdfRes = await fetch("/api/cdf/events", {
             method:  "POST",

@@ -4,18 +4,18 @@ import { cn } from "@/lib/cn";
 
 const LABEL_COLOR: Record<TaskStatus, string> = {
   overdue: "text-status-overdue",
-  soon: "text-status-soon",
   today: "text-status-today",
   tomorrow: "text-brand-highlight",
+  next_week: "text-brand-highlight",
   future: "text-text-date",
   nodate: "text-status-nodate",
 };
 
 const LABEL_DOT: Record<TaskStatus, string> = {
   overdue: "bg-status-overdue",
-  soon: "bg-status-soon",
   today: "bg-status-today",
   tomorrow: "bg-brand-highlight",
+  next_week: "bg-brand-highlight",
   future: "bg-text-date",
   nodate: "bg-status-nodate",
 };
@@ -57,7 +57,7 @@ export function TaskSection({ label, status, tasks, lists, onToggle, onClick }: 
               key={task.id}
               task={task}
               list={list}
-              onToggle={onToggle}
+              onToggle={async (id) => onToggle(id)}
               onClick={onClick}
             />
           );

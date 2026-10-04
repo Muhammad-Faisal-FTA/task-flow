@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { taskApi } from "@/services/apiService";
+import type { TaskLink } from "@/types/task";
 import {
   getPendingActions,
   removePendingAction,
@@ -44,7 +45,12 @@ export function useOfflineSync(
             listId: String(action.payload.listId ?? ""),
             dueDate: (action.payload.dueDate as string | null | undefined) ?? null,
             dueTime: (action.payload.dueTime as string | null | undefined) ?? null,
+            startTime: (action.payload.startTime as string | null | undefined) ?? null,
+            endTime: (action.payload.endTime as string | null | undefined) ?? null,
+            priority: action.payload.priority as "A" | "B" | "C" | "D" | undefined,
+            cdfTracking: action.payload.cdfTracking as boolean | undefined,
             repeat: action.payload.repeat as "none" | "daily" | "weekdays" | "weekly" | "monthly" | "yearly" | undefined,
+            links: action.payload.links as TaskLink[] | undefined,
           });
           if (action.entityId) syncedIds.set(action.entityId, created.id);
         } else if (action.type === "update-task" && action.entityId) {
@@ -54,8 +60,13 @@ export function useOfflineSync(
             listId: String(action.payload.listId ?? ""),
             dueDate: (action.payload.dueDate as string | null | undefined) ?? null,
             dueTime: (action.payload.dueTime as string | null | undefined) ?? null,
+            startTime: (action.payload.startTime as string | null | undefined) ?? null,
+            endTime: (action.payload.endTime as string | null | undefined) ?? null,
+            priority: action.payload.priority as "A" | "B" | "C" | "D" | undefined,
+            cdfTracking: action.payload.cdfTracking as boolean | undefined,
             repeat: action.payload.repeat as "none" | "daily" | "weekdays" | "weekly" | "monthly" | "yearly" | undefined,
             completed: Boolean(action.payload.completed),
+            links: action.payload.links as TaskLink[] | undefined,
           });
         } else {
           continue;

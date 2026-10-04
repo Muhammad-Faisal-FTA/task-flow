@@ -54,10 +54,18 @@ const UpdateTaskSchema = z.object({
 
   startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(),
   endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(),
+  priority: z.enum(["A", "B", "C", "D"]).optional(),
+  cdfTracking: z.boolean().optional(),
 
   repeat: z
     .enum(["none", "daily", "weekdays", "weekly", "monthly", "yearly"])
     .optional(),
+
+  links: z.array(z.object({
+    id: z.string().min(1),
+    name: z.string().min(1).max(100),
+    url: z.string().url(),
+  })).optional(),
 
   completed: z
     .boolean()

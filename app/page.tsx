@@ -19,6 +19,7 @@ import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { Toast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import type { TaskDTO } from "@/types/task";
+import type { TaskPriority } from "@/types/task";
 import type { CdfEventDTO } from "@/types/cdf";
 
 export default function Page() {
@@ -124,11 +125,41 @@ export default function Page() {
     [showLocalToast, fetchTasks],
   );
 
+  const { saveTask } = state;
+  const handleTimelineTask = useCallback(async (input: {
+    title: string;
+    listId: string;
+    date: string;
+    time: string;
+    priority: TaskPriority;
+    cdfTracking: boolean;
+  }) => {
+    const [hour, minute] = input.time.split(":").map(Number);
+    const endMinutes = hour * 60 + minute + 60;
+    const endTime = endMinutes < 24 * 60
+      ? `${String(Math.floor(endMinutes / 60)).padStart(2, "0")}:${String(endMinutes % 60).padStart(2, "0")}`
+      : null;
+    return saveTask({
+      title: input.title,
+      listId: input.listId,
+      completed: false,
+      dueDate: input.date,
+      dueTime: input.time,
+      startTime: input.time,
+      endTime,
+      priority: input.priority,
+      cdfTracking: input.cdfTracking,
+      repeat: "none",
+      links: [],
+    });
+  }, [saveTask]);
+
   const stateWithCdf = {
     ...state,
-    tasks: state.tasks as TaskDTO[],
+    tasks: state.tasks,
     cdfEnabled,
     onCdfEvent: handleCdfEvent,
+    createQuickTask: handleTimelineTask,
   };
 
   if (isLoading) {

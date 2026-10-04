@@ -11,7 +11,7 @@ export interface MailerConfig {
   baseUrl: string;
 }
 
-export function resolveMailerConfig(env: NodeJS.ProcessEnv = process.env): MailerConfig | null {
+export function resolveMailerConfig(env: Partial<NodeJS.ProcessEnv> = process.env): MailerConfig | null {
   const {
     SMTP_HOST,
     SMTP_PORT,

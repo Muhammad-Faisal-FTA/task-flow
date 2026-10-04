@@ -11,7 +11,8 @@ import { SearchResults } from "@/components/task/SearchResults";
 import { TaskTimeline } from "@/components/task/TaskTimeline";
 import { useTaskToggle } from "@/hooks/useTaskToggle";
 import { useSearch } from "@/hooks/useSearch";
-import type { TaskDTO, TaskListDTO } from "@/types/task";
+import type { TaskDTO, TaskPriority } from "@/types/task";
+import type { Task, TaskList } from "@/types";
 import type { CdfEventDTO } from "@/types/cdf";
 import type { Screen } from "@/types";
 import { NotificationBanner } from "@/hooks/NotificationBanner";
@@ -20,11 +21,19 @@ import { CacheIndicator } from "@/components/ui/CacheIndicator";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface HomeScreenState {
-  tasks: TaskDTO[];
-  lists: TaskListDTO[];
+  tasks: Task[];
+  lists: TaskList[];
   filterListId: string | null;
   setFilterListId: (id: string | null) => void;
-  openTask: (task: TaskDTO) => void;
+  openTask: (task: Task) => void;
+  createQuickTask: (input: {
+    title: string;
+    listId: string;
+    date: string;
+    time: string;
+    priority: TaskPriority;
+    cdfTracking: boolean;
+  }) => Promise<boolean>;
   navigate: (screen: Screen) => void;
   fetchTasks?: () => void;
   showToast?: (msg: string) => void;
@@ -35,7 +44,7 @@ interface HomeScreenState {
 }
 
 // ─── Section config ───────────────────────────────────────────────────────────
-const SECTIONS: { label: string; status: TaskDTO["status"] }[] = [
+const SECTIONS: { label: string; status: Task["status"] }[] = [
   { label: "OVERDUE", status: "overdue" },
   { label: "TODAY", status: "today" },
   { label: "TOMORROW", status: "tomorrow" },
@@ -44,7 +53,7 @@ const SECTIONS: { label: string; status: TaskDTO["status"] }[] = [
   { label: "NO DATE", status: "nodate" },
 ];
 
-const SECTION_DOT: Record<string, string> = {
+const SECTION_DOT: Record<Task["status"], string> = {
   overdue: "var(--color-overdue)",
   today: "var(--color-today)",
   tomorrow: "var(--color-accent)",
@@ -61,6 +70,7 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
     filterListId,
     setFilterListId,
     openTask,
+    createQuickTask,
     navigate,
     fetchTasks,
     showToast,
@@ -129,14 +139,30 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
 
   const handleSearchTaskClick = useCallback(
     (task: TaskDTO) => {
-      openTask(task);
+      openTask({
+        id: task.id,
+        title: task.title,
+        listId: task.listId,
+        completed: task.completed,
+        dueDate: task.dueDate,
+        dueTime: task.dueTime,
+        startTime: task.startTime,
+        endTime: task.endTime,
+        priority: task.priority,
+        cdfTracking: task.cdfTracking,
+        repeat: task.repeat,
+        status: task.status,
+        hasRepeatIcon: task.repeat !== "none",
+        links: task.links,
+      });
       handleCloseSearch();
     },
     [openTask, handleCloseSearch],
   );
 
   const isEmpty = tasks.length === 0;
-  const today = new Date().toISOString().split("T")[0];
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const timedTodayTasks = tasks.filter(
     (task) => task.dueDate === today && task.dueTime,
   );
@@ -270,30 +296,6 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
             hasSearched={hasSearched}
             onTaskClick={handleSearchTaskClick}
           />
-        ) : isEmpty ? (
-          <div
-            className="flex flex-col items-center justify-center py-20"
-            style={{ color: "var(--color-text-hint)" }}
-          >
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-              style={{ backgroundColor: "var(--color-bg-card)" }}
-            >
-              <span style={{ fontSize: "28px" }}>✓</span>
-            </div>
-            <p
-              className="font-medium"
-              style={{
-                fontSize: "var(--text-md)",
-                color: "var(--color-text-primary)",
-              }}
-            >
-              All done!
-            </p>
-            <p className="mt-1" style={{ fontSize: "var(--text-sm)" }}>
-              No tasks here.
-            </p>
-          </div>
         ) : (
           <>
             <TaskTimeline
@@ -301,7 +303,22 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
               onTaskClick={openTask}
               onToggle={toggle}
               isToggling={isToggling}
+              date={today}
+              lists={lists}
+              selectedListId={filterListId}
+              onQuickAdd={createQuickTask}
             />
+            {isEmpty ? (
+              <div className="flex flex-col items-center justify-center py-12" style={{ color: "var(--color-text-hint)" }}>
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: "var(--color-bg-card)" }}>
+                  <span style={{ fontSize: "28px" }}>✓</span>
+                </div>
+                <p className="font-medium" style={{ fontSize: "var(--text-md)", color: "var(--color-text-primary)" }}>
+                  All done!
+                </p>
+                <p className="mt-1" style={{ fontSize: "var(--text-sm)" }}>No tasks here.</p>
+              </div>
+            ) : null}
             {SECTIONS.map(({ label, status }) => {
             const sectionTasks = tasks.filter(
               (t) =>

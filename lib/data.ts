@@ -30,7 +30,8 @@ export const INITIAL_TASKS: Task[] = [
     dueTime: "21:30",
     repeat: "none",
     status: "overdue",
-    hasRepeatIcon: false
+    hasRepeatIcon: false,
+    links: [],
   },
   {
     id: "t2",
@@ -42,6 +43,7 @@ export const INITIAL_TASKS: Task[] = [
     repeat: "weekly",
     status: "overdue",
     hasRepeatIcon: true,
+    links: [],
   },
   {
     id: "t3",
@@ -52,7 +54,8 @@ export const INITIAL_TASKS: Task[] = [
     dueTime: "19:00",
     repeat: "none",
     status: "today",
-    hasRepeatIcon: false
+    hasRepeatIcon: false,
+    links: [],
   },
   {
     id: "t4",
@@ -64,6 +67,7 @@ export const INITIAL_TASKS: Task[] = [
     repeat: "daily",
     status: "tomorrow",
     hasRepeatIcon: true,
+    links: [],
   },
 ];
 

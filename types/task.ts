@@ -11,6 +11,8 @@ export type RepeatFrequency =
   | "monthly"
   | "yearly";
 
+export type TaskPriority = "A" | "B" | "C" | "D";
+
 // ─── Task status (derived at read time — never stored in DB) ──────────────────
 export type TaskStatus =
   | "overdue"    // dueDate < today, not completed
@@ -41,6 +43,10 @@ export interface ITask {
   completedAt: Date | null;      // when it was completed
   dueDate: Date | null;          // indexed
   dueTime: string | null;        // "HH:MM" — no timezone issues
+  startTime: string | null;
+  endTime: string | null;
+  priority: TaskPriority;
+  cdfTracking: boolean;
   repeat: RepeatFrequency;
   deletedAt: Date | null;        // null = active, Date = soft deleted (FR-15)
   createdAt: Date;
@@ -62,8 +68,8 @@ export interface TaskDTO {
   dueTime: string | null;        // "HH:MM"
   startTime: string | null;      // "HH:MM"
   endTime: string | null;        // "HH:MM"
-  startTime?: string | null;     // "HH:MM" — optional timeline start
-  endTime?: string | null;       // "HH:MM" — optional timeline end
+  priority: TaskPriority;
+  cdfTracking: boolean;
   repeat: RepeatFrequency;
   status: TaskStatus;            // derived — not in DB
   deletedAt: string | null;      // ISO string — for undo (FR-15)
@@ -103,8 +109,8 @@ export interface CreateTaskInput {
   dueTime?: string | null;       // "HH:MM"
   startTime?: string | null;     // "HH:MM"
   endTime?: string | null;       // "HH:MM"
-  startTime?: string | null;     // "HH:MM"
-  endTime?: string | null;       // "HH:MM"
+  priority?: TaskPriority;
+  cdfTracking?: boolean;
   repeat?: RepeatFrequency;
   links?: TaskLink[];           // FR-11 — optional array of links to attach to task
 }
@@ -114,6 +120,10 @@ export interface UpdateTaskInput {
   listId?: string;
   dueDate?: string | null;
   dueTime?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  priority?: TaskPriority;
+  cdfTracking?: boolean;
   repeat?: RepeatFrequency;
   completed?: boolean;
   toggle?: boolean;
@@ -146,4 +156,3 @@ export interface TaskLink {
   name: string;    // display name e.g. "Design Doc"
   url:  string;    // full URL e.g. "https://..."
 }
-

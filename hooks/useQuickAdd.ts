@@ -29,10 +29,13 @@ interface UseQuickAddReturn {
   value:        string;
   setValue:     (v: string) => void;
   isSubmitting: boolean;
-  isLoading:    boolean;    // loading default list
+  isLoading:    boolean;    // loading task lists
   submit:       () => Promise<void>;
   clear:        () => void;
+  lists:        TaskListDTO[];
   defaultList:  TaskListDTO | null;
+  selectedListId: string;
+  setSelectedListId: (id: string) => void;
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -45,7 +48,9 @@ export function useQuickAdd(
   const [value,        setValue]        = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading,    setIsLoading]    = useState(true);
+  const [lists,        setLists]        = useState<TaskListDTO[]>([]);
   const [defaultList,  setDefaultList]  = useState<TaskListDTO | null>(null);
+  const [selectedListId, setSelectedListId] = useState("");
 
   // Stable ref — avoids stale closure in submit
   const defaultListRef = useRef<TaskListDTO | null>(null);
@@ -57,8 +62,10 @@ export function useQuickAdd(
         setIsLoading(true);
         const cachedLists = await getCachedLists();
         const cachedDefault = cachedLists.find((l) => l.isDefault) ?? cachedLists[0] ?? null;
+        setLists(cachedLists);
         if (cachedDefault) {
           setDefaultList(cachedDefault);
+          setSelectedListId(cachedDefault.id);
           defaultListRef.current = cachedDefault;
         }
 
@@ -76,7 +83,9 @@ export function useQuickAdd(
         const data = await res.json() as { data: TaskListDTO[] };
         const def  = data.data.find((l) => l.isDefault) ?? data.data[0] ?? null;
 
+        setLists(data.data);
         setDefaultList(def);
+        setSelectedListId(def?.id ?? "");
         defaultListRef.current = def;
       } catch (err) {
         console.error("[useQuickAdd] Failed to fetch default list:", err);
@@ -99,7 +108,7 @@ export function useQuickAdd(
     if (!title) return;
 
     // Guard: no list available
-    const list = defaultListRef.current;
+    const list = lists.find((item) => item.id === selectedListId) ?? defaultListRef.current;
     if (!list) {
       onError?.("No list available. Please create a list first.");
       return;
@@ -120,6 +129,10 @@ export function useQuickAdd(
           completedAt: null,
           dueDate: null,
           dueTime: null,
+          startTime: null,
+          endTime: null,
+          priority: "C",
+          cdfTracking: true,
           repeat: "none",
           status: "nodate",
           deletedAt: null,
@@ -178,7 +191,7 @@ export function useQuickAdd(
     } finally {
       setIsSubmitting(false);
     }
-  }, [value, getAccessToken, clear, onSuccess, onError]);
+  }, [value, lists, selectedListId, getAccessToken, clear, onSuccess, onError]);
 
   return {
     value,
@@ -187,6 +200,9 @@ export function useQuickAdd(
     isLoading,
     submit,
     clear,
+    lists,
     defaultList,
+    selectedListId,
+    setSelectedListId,
   };
 }

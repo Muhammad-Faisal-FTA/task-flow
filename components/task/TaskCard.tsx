@@ -5,7 +5,7 @@
 import { CalendarDays, AlertCircle, RepeatIcon } from "lucide-react";
 import { TaskCheckbox } from "@/components/task/TaskCheckbox";
 import { cn } from "@/lib/cn";
-import type { TaskDTO, TaskListDTO } from "@/types/task";
+import type { Task, TaskList } from "@/types";
 
 const LEFT_BORDER: Record<string, string> = {
   overdue: "var(--color-overdue)",
@@ -28,10 +28,10 @@ const DATE_COLOR: Record<string, string> = {
 };
 
 interface TaskCardProps {
-  task: TaskDTO;
-  list?: TaskListDTO;
+  task: Task;
+  list?: TaskList;
   onToggle: (taskId: string) => Promise<void>;
-  onClick: (task: TaskDTO) => void;
+  onClick: (task: Task) => void;
   isToggling?: boolean;
 }
 
@@ -97,6 +97,19 @@ export function TaskCard({
         {/* Meta row */}
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
           {/* Due date */}
+          <span
+            className="rounded-badge px-2 py-0.5 font-semibold"
+            style={{
+              fontSize: "var(--text-xs)",
+              color: task.priority === "A" ? "var(--color-overdue)" : "var(--color-text-secondary)",
+              backgroundColor: "var(--color-bg-app)",
+              border: "1px solid var(--color-border-default)",
+            }}
+            aria-label={`Priority ${task.priority ?? "C"}`}
+          >
+            {task.priority ?? "C"}
+          </span>
+
           {dateStr && (
             <span
               className="flex items-center gap-1"
@@ -158,7 +171,7 @@ export function TaskCard({
           )} */}
 
           {/* List badge — only show for non-default lists */}
-          {list && list.id !== "default" && !(list as any).isDefault && (
+          {list && list.id !== "default" && !list.isDefault && (
             <span
               className="flex items-center gap-1 px-2 py-0.5 rounded-badge"
               style={{

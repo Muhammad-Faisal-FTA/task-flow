@@ -9,6 +9,7 @@ import {
   isCdfEnabled,
   resolveCdfError,
 } from "@/services/cdfService";
+import { getTaskById } from "@/services/taskService";
 import { z } from "zod";
 import { isValidObjectId } from "@/middlewares/validateObjectId";
 import type { AccessTokenPayload } from "@/types/auth";
@@ -18,7 +19,7 @@ export const runtime = "nodejs";
 // ─── GET /api/cdf/events ──────────────────────────────────────────────────────
 const getHandler = async (
   req:  NextRequest,
-  _ctx: { params: Record<string, string> },
+  _ctx: { params: Promise<Record<string, string>> },
   user: AccessTokenPayload
 ): Promise<NextResponse> => {
   try {
@@ -60,7 +61,7 @@ const CreateEventSchema = z.object({
 
 const postHandler = async (
   req:  NextRequest,
-  _ctx: { params: Record<string, string> },
+  _ctx: { params: Promise<Record<string, string>> },
   user: AccessTokenPayload
 ): Promise<NextResponse> => {
   try {
@@ -93,14 +94,22 @@ const postHandler = async (
       );
     }
 
+    const task = await getTaskById(user.userId, parsed.data.taskId);
+    if (!task.cdfTracking) {
+      return NextResponse.json(
+        { error: "CDF tracking is disabled for this task." },
+        { status: 403 }
+      );
+    }
+
     // 3. Create event
     const event = await createCdfEvent(user.userId, {
-      taskId:    parsed.data.taskId,
-      taskTitle: parsed.data.taskTitle,
-      listId:    parsed.data.listId,
-      repeat:    parsed.data.repeat,
-      dueDate:   parsed.data.dueDate ?? null,
-      dueTime:   parsed.data.dueTime ?? null,
+      taskId:    task.id,
+      taskTitle: task.title,
+      listId:    task.listId,
+      repeat:    task.repeat,
+      dueDate:   task.dueDate,
+      dueTime:   task.dueTime,
     });
 
     return NextResponse.json({ data: event }, { status: 201 });

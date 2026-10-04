@@ -55,7 +55,7 @@ const getHandler = async (
 // ─── POST /api/lists ──────────────────────────────────────────────────────────
 const postHandler = async (
   req:  NextRequest,
-  _ctx: { params: Record<string, string> },
+  _ctx: { params: Promise<Record<string, string>> },
   user: AccessTokenPayload
 ): Promise<NextResponse> => {
   try {

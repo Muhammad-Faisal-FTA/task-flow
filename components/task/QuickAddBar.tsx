@@ -26,8 +26,17 @@ export function QuickAddBar({
 }: QuickAddBarProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { value, setValue, isSubmitting, isLoading, submit, defaultList } =
-    useQuickAdd({
+  const {
+    value,
+    setValue,
+    isSubmitting,
+    isLoading,
+    submit,
+    lists,
+    defaultList,
+    selectedListId,
+    setSelectedListId,
+  } = useQuickAdd({
       onSuccess: onTaskCreated,
       onError,
     });
@@ -311,13 +320,16 @@ export function QuickAddBar({
           </button>
         </div>
 
-        {/* ── Default list indicator ────────────────────────────────────── */}
+        {/* ── Task list selector ────────────────────────────────────────── */}
         {defaultList && (
           <div className="flex items-center gap-2 px-4 pb-4">
             <div
               className="w-2 h-2 rounded-full flex-shrink-0"
               style={{
-                backgroundColor: defaultList.color ?? "var(--color-primary)",
+                backgroundColor:
+                  lists.find((list) => list.id === selectedListId)?.color ??
+                  defaultList.color ??
+                  "var(--color-primary)",
               }}
             />
             <span
@@ -326,11 +338,31 @@ export function QuickAddBar({
                 color: "var(--color-text-hint)",
               }}
             >
-              Adding to{" "}
-              <strong style={{ color: "var(--color-text-secondary)" }}>
-                {defaultList.name}
-              </strong>
+              Add to
             </span>
+            <select
+              aria-label="Task list"
+              value={selectedListId || defaultList.id}
+              onChange={(event) => setSelectedListId(event.target.value)}
+              disabled={isSubmitting || isLoading || lists.length < 2}
+              className="min-w-0 max-w-full bg-transparent"
+              style={{
+                border: "none",
+                color: "var(--color-text-secondary)",
+                fontSize: "var(--text-xs)",
+                fontWeight: 700,
+                cursor: lists.length < 2 ? "default" : "pointer",
+              }}
+            >
+              {lists.map((list) => (
+                <option key={list.id} value={list.id}>
+                  {list.name}{list.isDefault ? " (Default)" : ""}
+                </option>
+              ))}
+              {lists.length === 0 && (
+                <option value={defaultList.id}>{defaultList.name}</option>
+              )}
+            </select>
           </div>
         )}
       </div>
