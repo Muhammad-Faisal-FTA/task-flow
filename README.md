@@ -451,11 +451,13 @@ npm start
 ## 🔔 Push Notification Setup
 
 ```
-GET https://your-app.vercel.app/api/notifications/send?window=5
+GET https://your-app.vercel.app/api/notifications/send
 Authorization: Bearer YOUR_CRON_SECRET
 ```
 
 **Free cron options:** [cron-job.org](https://cron-job.org) · GitHub Actions · Vercel Pro
+
+Configure the cron job to run every minute. Task reminders are sent once, starting 2 minutes before their start time.
 
 ---
 

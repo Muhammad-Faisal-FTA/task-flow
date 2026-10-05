@@ -72,11 +72,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     }
 
     // ── Run notifications ──────────────────────────────────────────────────────
-    const windowMinutes = parseInt(
-      req.nextUrl.searchParams.get("window") ?? "5"
-    );
-
-    const result = await sendAtTimeReminders(windowMinutes);
+    const result = await sendAtTimeReminders();
 
     return NextResponse.json(
       {
