@@ -1,0 +1,1 @@
+ALTER TABLE "cdf_events" ADD COLUMN "repeat_days" integer[] DEFAULT '{}'::integer[] NOT NULL;

@@ -9,7 +9,8 @@ export type RepeatFrequency =
   | "weekdays"
   | "weekly"
   | "monthly"
-  | "yearly";
+  | "yearly"
+  | "custom";
 
 export type TaskPriority = "A" | "B" | "C" | "D";
 
@@ -48,6 +49,8 @@ export interface ITask {
   priority: TaskPriority;
   cdfTracking: boolean;
   repeat: RepeatFrequency;
+  repeatDays: number[];
+  repeatEndDate: Date | null;
   deletedAt: Date | null;        // null = active, Date = soft deleted (FR-15)
   createdAt: Date;
   updatedAt: Date;
@@ -71,6 +74,8 @@ export interface TaskDTO {
   priority: TaskPriority;
   cdfTracking: boolean;
   repeat: RepeatFrequency;
+  repeatDays: number[];
+  repeatEndDate: string | null;
   status: TaskStatus;            // derived — not in DB
   deletedAt: string | null;      // ISO string — for undo (FR-15)
   createdAt: string;
@@ -112,6 +117,8 @@ export interface CreateTaskInput {
   priority?: TaskPriority;
   cdfTracking?: boolean;
   repeat?: RepeatFrequency;
+  repeatDays?: number[];
+  repeatEndDate?: string | null;
   links?: TaskLink[];           // FR-11 — optional array of links to attach to task
 }
 
@@ -125,6 +132,8 @@ export interface UpdateTaskInput {
   priority?: TaskPriority;
   cdfTracking?: boolean;
   repeat?: RepeatFrequency;
+  repeatDays?: number[];
+  repeatEndDate?: string | null;
   completed?: boolean;
   toggle?: boolean;
   restore?: boolean;

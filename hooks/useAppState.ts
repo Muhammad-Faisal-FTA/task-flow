@@ -59,6 +59,8 @@ export function useAppState() {
       priority: "C",
       cdfTracking: true,
       repeat: "none",
+      repeatDays: [],
+      repeatEndDate: null,
       status: "today",
       hasRepeatIcon: false,
       links: [],

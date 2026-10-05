@@ -18,6 +18,11 @@ import type { AccessTokenPayload } from "@/types/auth";
 export const runtime = "nodejs";
 
 // ─── Validation schemas ───────────────────────────────────────────────────────
+const repeatDaysSchema = z.array(z.number().int().min(0).max(6)).max(7).refine(
+  (days) => new Set(days).size === days.length,
+  "Weekdays must not be repeated",
+);
+
 const CreateTaskSchema = z.object({
   title: z
     .string()
@@ -54,15 +59,24 @@ const CreateTaskSchema = z.object({
   cdfTracking: z.boolean().optional(),
 
   repeat: z
-    .enum(["none", "daily", "weekdays", "weekly", "monthly", "yearly"])
+    .enum(["none", "daily", "weekdays", "weekly", "monthly", "yearly", "custom"])
     .optional()
     .default("none"),
+  repeatDays: repeatDaysSchema.optional(),
+  repeatEndDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "repeatEndDate must be in YYYY-MM-DD format").nullable().optional(),
 
   links: z.array(z.object({
     id: z.string().min(1),
     name: z.string().min(1).max(100),
     url: z.string().url(),
   })).optional(),
+}).superRefine((task, context) => {
+  if (task.repeat === "custom" && !task.repeatDays?.length) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["repeatDays"], message: "Select at least one weekday for a custom repeat." });
+  }
+  if (task.dueDate && task.repeatEndDate && task.repeatEndDate < task.dueDate) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["repeatEndDate"], message: "Repeat end date cannot be before the due date." });
+  }
 });
 
 // ─── GET /api/tasks ───────────────────────────────────────────────────────────

@@ -36,6 +36,8 @@ function taskDtoToUi(dto: TaskDTO): Task {
     priority:      dto.priority ?? "C",
     cdfTracking:   dto.cdfTracking ?? true,
     repeat:        dto.repeat,
+    repeatDays:    dto.repeatDays,
+    repeatEndDate: dto.repeatEndDate,
     status:        dto.status,        // ← keep exact status from API
     hasRepeatIcon: dto.repeat !== "none",
     links:         dto.links??[],         // ← pass through links from API
@@ -259,6 +261,8 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
       priority:      "C",
       cdfTracking:   true,
       repeat:        "none",
+      repeatDays:    [],
+      repeatEndDate: null,
       status:        "nodate",
       hasRepeatIcon: false,
       links:         [],
@@ -285,6 +289,8 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
       priority: taskInput.priority,
       cdfTracking: taskInput.cdfTracking,
       repeat: taskInput.repeat,
+      repeatDays: taskInput.repeatDays,
+      repeatEndDate: taskInput.repeatEndDate,
       status: "nodate",
       hasRepeatIcon: taskInput.repeat !== "none",
       links: taskInput.links ?? [],
@@ -312,6 +318,8 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
             priority: taskInput.priority,
             cdfTracking: taskInput.cdfTracking,
             repeat: taskInput.repeat,
+            repeatDays: taskInput.repeatDays,
+            repeatEndDate: taskInput.repeatEndDate,
             completed: taskInput.completed,
             links: taskInput.links ?? [],
             id: taskInput.id,
@@ -336,6 +344,8 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
           priority:  taskInput.priority,
           cdfTracking: taskInput.cdfTracking,
           repeat:    taskInput.repeat,
+          repeatDays: taskInput.repeatDays,
+          repeatEndDate: taskInput.repeatEndDate,
           completed: taskInput.completed,
           links:     taskInput.links ?? [],
         });
@@ -352,6 +362,8 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
           priority: taskInput.priority,
           cdfTracking: taskInput.cdfTracking,
           repeat:  taskInput.repeat,
+          repeatDays: taskInput.repeatDays,
+          repeatEndDate: taskInput.repeatEndDate,
           links:   taskInput.links ?? [],
         });
         showToast("Task added ✓");
