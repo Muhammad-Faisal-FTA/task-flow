@@ -26,7 +26,9 @@ export interface Task {
   endTime?:      string | null;   // "HH:MM" — optional timeline end
   priority?:     import("@/types/task").TaskPriority;
   cdfTracking?:  boolean;
-  repeat:        "none" | "daily" | "weekdays" | "weekly" | "monthly" | "yearly";
+  repeat:        "none" | "daily" | "weekdays" | "weekly" | "monthly" | "yearly" | "custom";
+  repeatDays:    number[];
+  repeatEndDate: string | null;
   status:        "overdue" | "today" | "tomorrow" | "next_week" | "future" | "nodate";
   hasRepeatIcon: boolean;
   links:         TaskLink[];       // ← add this

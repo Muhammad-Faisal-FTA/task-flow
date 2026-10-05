@@ -19,7 +19,8 @@ export interface ICdfEvent {
   taskId:       DatabaseId;
   taskTitle:    string;
   listId:       DatabaseId;
-  repeat:       "none" | "daily" | "weekdays" | "weekly" | "monthly" | "yearly";
+  repeat:       "none" | "daily" | "weekdays" | "weekly" | "monthly" | "yearly" | "custom";
+  repeatDays:   number[];
 
   // Due info — for discipline calculation
   dueDate:      Date | null;
@@ -83,6 +84,7 @@ export interface CdfEventDTO {
   taskTitle:      string;
   listId:         string;
   repeat:         ICdfEvent["repeat"];
+  repeatDays:     number[];
   dueDate:        string | null;
   dueTime:        string | null;
   completedAt:    string;
@@ -144,6 +146,7 @@ export interface CreateCdfEventInput {
   taskTitle: string;
   listId:    string;
   repeat:    ICdfEvent["repeat"];
+  repeatDays: number[];
   dueDate:   string | null;
   dueTime:   string | null;
 }
