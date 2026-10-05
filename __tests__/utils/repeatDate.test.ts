@@ -15,6 +15,14 @@ describe("nextRepeatDate", () => {
     expect(nextRepeatDate(friday, "weekdays").toISOString()).toBe("2026-09-28T00:00:00.000Z");
   });
 
+  it("advances custom repeats to the next selected weekday", () => {
+    const monday = new Date("2026-09-21T00:00:00.000Z");
+    const selectedDays = [1, 3, 6];
+
+    expect(nextRepeatDate(monday, "custom", selectedDays).toISOString()).toBe("2026-09-23T00:00:00.000Z");
+    expect(nextRepeatDate(new Date("2026-09-26T00:00:00.000Z"), "custom", selectedDays).toISOString()).toBe("2026-09-28T00:00:00.000Z");
+  });
+
   it("clamps monthly recurrences to the last day of shorter months", () => {
     const januaryEnd = new Date("2026-01-31T00:00:00.000Z");
 

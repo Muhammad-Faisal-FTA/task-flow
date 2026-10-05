@@ -81,6 +81,16 @@ async function shareTask(task: Task): Promise<void> {
   }
 }
 
+const REPEAT_DAYS = [
+  { value: 0, label: "Sun" },
+  { value: 1, label: "Mon" },
+  { value: 2, label: "Tue" },
+  { value: 3, label: "Wed" },
+  { value: 4, label: "Thu" },
+  { value: 5, label: "Fri" },
+  { value: 6, label: "Sat" },
+];
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatDisplayDate(iso: string | null): string {
   if (!iso) return "No date";
@@ -141,6 +151,12 @@ export function DetailScreen({ state }: DetailScreenProps) {
   const isNew = !form.id;
   const listOptions = lists.map((l) => ({ value: l.id, label: l.name }));
   const selectedList = lists.find((l) => l.id === form.listId);
+  const canSave = Boolean(
+    form.title.trim() &&
+    !isSaving &&
+    !(form.repeat === "custom" && form.repeatDays.length === 0) &&
+    !(form.dueDate && form.repeatEndDate && form.repeatEndDate < form.dueDate),
+  );
 
   const update = <K extends keyof Task>(key: K, val: Task[K]) =>
     setForm((prev) => (prev ? { ...prev, [key]: val } : prev));
@@ -149,7 +165,7 @@ export function DetailScreen({ state }: DetailScreenProps) {
     setOpenPicker((prev) => (prev === picker ? null : picker));
 
   const handleSave = async () => {
-    if (!form?.title.trim()) return;
+    if (!canSave) return;
     setIsSaving(true);
     try {
       const saved = await saveTask({
@@ -164,6 +180,8 @@ export function DetailScreen({ state }: DetailScreenProps) {
         startTime: form.startTime ?? form.dueTime,
         endTime: form.endTime ?? null,
         repeat: form.repeat,
+        repeatDays: form.repeatDays,
+        repeatEndDate: form.repeatEndDate,
         links:     form.links ?? [],     // ← add this
 
       });
@@ -523,9 +541,72 @@ export function DetailScreen({ state }: DetailScreenProps) {
             label="Repeat"
             value={form.repeat}
             options={[...REPEAT_OPTIONS]}
-            onChange={(val) => update("repeat", val as Task["repeat"])}
+            onChange={(val) => {
+              const repeat = val as Task["repeat"];
+              update("repeat", repeat);
+              if (repeat === "none") update("repeatEndDate", null);
+            }}
           />
         </div>
+
+        {form.repeat === "custom" && (
+          <fieldset className="mb-5">
+            <legend className={labelCls} style={{ fontSize: "var(--text-xs)", color: "var(--color-text-accent)" }}>
+              Repeat on
+            </legend>
+            <div className="grid grid-cols-7 gap-2">
+              {REPEAT_DAYS.map(({ value, label }) => {
+                const selected = form.repeatDays.includes(value);
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => update(
+                      "repeatDays",
+                      selected
+                        ? form.repeatDays.filter((day) => day !== value)
+                        : [...form.repeatDays, value].sort((a, b) => a - b),
+                    )}
+                    className="rounded-full py-2 text-xs font-semibold transition-colors"
+                    style={{
+                      backgroundColor: selected ? "var(--color-primary)" : "var(--color-bg-card)",
+                      color: selected ? "#fff" : "var(--color-text-secondary)",
+                      border: "1px solid var(--color-border-default)",
+                    }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            {form.repeatDays.length === 0 && (
+              <p role="alert" className="mt-2 text-xs" style={{ color: "var(--color-overdue)" }}>
+                Select at least one day.
+              </p>
+            )}
+          </fieldset>
+        )}
+
+        {form.repeat !== "none" && (
+          <label className="mb-5 flex flex-col gap-2">
+            <span className={labelCls} style={{ fontSize: "var(--text-xs)", color: "var(--color-text-accent)" }}>
+              Repeat until (inclusive, optional)
+            </span>
+            <input
+              type="date"
+              value={form.repeatEndDate ?? ""}
+              min={form.dueDate ?? undefined}
+              onChange={(event) => update("repeatEndDate", event.target.value || null)}
+              className="auth-input w-full"
+            />
+            {form.dueDate && form.repeatEndDate && form.repeatEndDate < form.dueDate && (
+              <span role="alert" className="text-xs" style={{ color: "var(--color-overdue)" }}>
+                End date cannot be before the first due date.
+              </span>
+            )}
+          </label>
+        )}
 
         {/* Task list */}
         <div style={{ marginBottom: "20px" }}>
@@ -553,17 +634,17 @@ export function DetailScreen({ state }: DetailScreenProps) {
       >
         <button
           onClick={handleSave}
-          disabled={!form.title.trim() || isSaving}
+          disabled={!canSave}
           className="w-full py-4 rounded-card font-semibold transition-all duration-200 active:scale-[0.98]"
           style={{
             fontSize: "var(--text-md)",
             color: "#ffffff",
             backgroundColor:
-              form.title.trim() && !isSaving
+              canSave
                 ? "var(--color-primary)"
                 : "var(--color-bg-card)",
-            cursor: !form.title.trim() || isSaving ? "not-allowed" : "pointer",
-            opacity: !form.title.trim() || isSaving ? 0.6 : 1,
+            cursor: canSave ? "pointer" : "not-allowed",
+            opacity: canSave ? 1 : 0.6,
             boxShadow: "var(--shadow-fab)",
           }}
         >

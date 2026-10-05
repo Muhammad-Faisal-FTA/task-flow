@@ -22,7 +22,7 @@ function formatLate(ms: number): string {
   return `${mins}m late`;
 }
 
-function repeatLabel(repeat: CdfEventDTO["repeat"]): string {
+function repeatLabel(repeat: CdfEventDTO["repeat"], repeatDays: number[]): string {
   const MAP: Record<CdfEventDTO["repeat"], string> = {
     none: "",
     daily: "Daily",
@@ -30,6 +30,7 @@ function repeatLabel(repeat: CdfEventDTO["repeat"]): string {
     weekly: "Weekly",
     monthly: "Monthly",
     yearly: "Yearly",
+    custom: `Custom: ${repeatDays.map((day) => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][day]).join(", ")}`,
   };
   return MAP[repeat] ?? "";
 }
@@ -100,7 +101,7 @@ function EventCard({ event }: { event: CdfEventDTO }) {
                   color: "var(--color-repeat)",
                 }}
               >
-                {repeatLabel(event.repeat)}
+                {repeatLabel(event.repeat, event.repeatDays)}
               </span>
             </div>
           )}

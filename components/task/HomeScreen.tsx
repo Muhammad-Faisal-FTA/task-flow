@@ -151,6 +151,8 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
         priority: task.priority,
         cdfTracking: task.cdfTracking,
         repeat: task.repeat,
+        repeatDays: task.repeatDays,
+        repeatEndDate: task.repeatEndDate,
         status: task.status,
         hasRepeatIcon: task.repeat !== "none",
         links: task.links,

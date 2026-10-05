@@ -29,6 +29,20 @@
       "when": 1791109713080,
       "tag": "0003_add_task_priority_and_cdf_tracking",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791215721267,
+      "tag": "0004_add_repeat_days_and_end_date",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791215884431,
+      "tag": "0005_add_repeat_days_to_cdf_events",
+      "breakpoints": true
     }
   ]
 }

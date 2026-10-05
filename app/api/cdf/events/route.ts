@@ -45,7 +45,7 @@ const CreateEventSchema = z.object({
   taskTitle: z.string().min(1).max(255).trim(),
   listId:    z.string().refine(isValidObjectId, "Invalid listId"),
   repeat:    z.enum([
-    "none", "daily", "weekdays", "weekly", "monthly", "yearly"
+    "none", "daily", "weekdays", "weekly", "monthly", "yearly", "custom"
   ]),
   dueDate: z
     .string()
@@ -108,6 +108,7 @@ const postHandler = async (
       taskTitle: task.title,
       listId:    task.listId,
       repeat:    task.repeat,
+      repeatDays: task.repeatDays,
       dueDate:   task.dueDate,
       dueTime:   task.dueTime,
     });

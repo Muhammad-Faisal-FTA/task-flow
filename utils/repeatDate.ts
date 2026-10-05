@@ -1,6 +1,10 @@
 import type { RepeatFrequency } from "@/types/task";
 
-export function nextRepeatDate(date: Date, repeat: RepeatFrequency): Date {
+export function nextRepeatDate(
+  date: Date,
+  repeat: RepeatFrequency,
+  repeatDays: number[] = [],
+): Date {
   const year = date.getUTCFullYear();
   const month = date.getUTCMonth();
   const day = date.getUTCDate();
@@ -14,6 +18,17 @@ export function nextRepeatDate(date: Date, repeat: RepeatFrequency): Date {
     return next;
   }
   if (repeat === "weekly") return new Date(Date.UTC(year, month, day + 7));
+  if (repeat === "custom") {
+    if (repeatDays.length === 0) {
+      throw new Error("Custom repeat requires at least one selected weekday.");
+    }
+
+    const selectedDays = new Set(repeatDays);
+    for (let offset = 1; offset <= 7; offset += 1) {
+      const next = new Date(Date.UTC(year, month, day + offset));
+      if (selectedDays.has(next.getUTCDay())) return next;
+    }
+  }
   if (repeat === "monthly") {
     const nextMonth = new Date(Date.UTC(year, month + 1, 1));
     const lastDay = new Date(Date.UTC(year, month + 2, 0)).getUTCDate();

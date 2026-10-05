@@ -150,6 +150,8 @@ export default function Page() {
       priority: input.priority,
       cdfTracking: input.cdfTracking,
       repeat: "none",
+      repeatDays: [],
+      repeatEndDate: null,
       links: [],
     });
   }, [saveTask]);

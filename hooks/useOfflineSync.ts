@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { taskApi } from "@/services/apiService";
-import type { TaskLink } from "@/types/task";
+import type { RepeatFrequency, TaskLink } from "@/types/task";
 import {
   getPendingActions,
   removePendingAction,
@@ -49,7 +49,9 @@ export function useOfflineSync(
             endTime: (action.payload.endTime as string | null | undefined) ?? null,
             priority: action.payload.priority as "A" | "B" | "C" | "D" | undefined,
             cdfTracking: action.payload.cdfTracking as boolean | undefined,
-            repeat: action.payload.repeat as "none" | "daily" | "weekdays" | "weekly" | "monthly" | "yearly" | undefined,
+            repeat: action.payload.repeat as RepeatFrequency | undefined,
+            repeatDays: action.payload.repeatDays as number[] | undefined,
+            repeatEndDate: (action.payload.repeatEndDate as string | null | undefined) ?? null,
             links: action.payload.links as TaskLink[] | undefined,
           });
           if (action.entityId) syncedIds.set(action.entityId, created.id);
@@ -64,7 +66,9 @@ export function useOfflineSync(
             endTime: (action.payload.endTime as string | null | undefined) ?? null,
             priority: action.payload.priority as "A" | "B" | "C" | "D" | undefined,
             cdfTracking: action.payload.cdfTracking as boolean | undefined,
-            repeat: action.payload.repeat as "none" | "daily" | "weekdays" | "weekly" | "monthly" | "yearly" | undefined,
+            repeat: action.payload.repeat as RepeatFrequency | undefined,
+            repeatDays: action.payload.repeatDays as number[] | undefined,
+            repeatEndDate: (action.payload.repeatEndDate as string | null | undefined) ?? null,
             completed: Boolean(action.payload.completed),
             links: action.payload.links as TaskLink[] | undefined,
           });

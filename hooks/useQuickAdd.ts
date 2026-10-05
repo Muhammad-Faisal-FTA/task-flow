@@ -134,6 +134,8 @@ export function useQuickAdd(
           priority: "C",
           cdfTracking: true,
           repeat: "none",
+          repeatDays: [],
+          repeatEndDate: null,
           status: "nodate",
           deletedAt: null,
           createdAt: now,
