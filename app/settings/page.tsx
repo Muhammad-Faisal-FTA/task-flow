@@ -560,7 +560,6 @@ import { useEffect, useState }      from "react";
 import { useRouter }                from "next/navigation";
 import { useAuth }                  from "@/hooks/useAuth";
 import { useCdfSettings }           from "@/hooks/useCdfSettings";
-import { usePushNotifications }     from "@/hooks/usePushNotifications";
 import { HeaderBar }                from "@/components/layout/HeaderBar";
 import { BottomNav }                from "@/components/layout/BottomNav";
 import { SidebarNav }               from "@/components/layout/SidebarNav";
@@ -819,71 +818,11 @@ function ThemeRow() {
 
 // ─── Notification toggle row ──────────────────────────────────────────────────
 function NotificationRow() {
-  // ← Hook called INSIDE component — correct
-  const {
-    permission,
-    isSubscribed,
-    isLoading: notifLoading,
-    subscribe,
-    unsubscribe,
-  } = usePushNotifications();
-
-  const value =
-    permission === "unsupported" ? "Not supported on this browser"     :
-    permission === "denied"      ? "Blocked — enable in browser settings" :
-    isSubscribed                 ? "On — notified at task due time"    :
-    "Off — tap to enable";
-
-  const handleClick =
-    permission === "unsupported" || permission === "denied"
-      ? undefined
-      : isSubscribed
-      ? unsubscribe
-      : subscribe;
-
-  const showToggle =
-    permission !== "unsupported" && permission !== "denied";
-
   return (
     <SettingsRow
       icon={<Bell style={{ width: "16px", height: "16px" }} />}
-      label="Task Reminders"
-      value={value}
-      onClick={handleClick}
-      rightNode={
-        showToggle ? (
-          <div
-            style={{
-              width:           "44px",
-              height:          "26px",
-              borderRadius:    "13px",
-              backgroundColor: isSubscribed
-                ? "var(--color-today)"
-                : "var(--color-bg-header)",
-              border:     `1.5px solid ${isSubscribed
-                ? "var(--color-today)"
-                : "var(--color-border-default)"}`,
-              position:   "relative",
-              cursor:     notifLoading ? "not-allowed" : "pointer",
-              opacity:    notifLoading ? 0.6 : 1,
-              transition: "background-color 0.25s ease",
-              flexShrink: 0,
-            }}
-          >
-            <div style={{
-              position:        "absolute",
-              top:             "2px",
-              left:            isSubscribed ? "22px" : "2px",
-              width:           "18px",
-              height:          "18px",
-              borderRadius:    "50%",
-              backgroundColor: "#ffffff",
-              boxShadow:       "0 1px 4px rgba(0,0,0,0.3)",
-              transition:      "left 0.25s cubic-bezier(0.34,1.56,0.64,1)",
-            }} />
-          </div>
-        ) : undefined
-      }
+      label="In-app task reminders"
+      value="On while TaskFlow is open — no browser permission needed"
     />
   );
 }

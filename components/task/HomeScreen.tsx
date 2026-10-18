@@ -15,7 +15,6 @@ import type { TaskDTO, TaskPriority } from "@/types/task";
 import type { Task, TaskList } from "@/types";
 import type { CdfEventDTO } from "@/types/cdf";
 import type { Screen } from "@/types";
-import { NotificationBanner } from "@/hooks/NotificationBanner";
 import { CacheIndicator } from "@/components/ui/CacheIndicator";
 
 
@@ -176,7 +175,6 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
         title="✓ All Tasks"
         rightAction={
           <div className="flex items-center gap-2">
-            <NotificationBanner />
             <button
               onClick={searchOpen ? handleCloseSearch : handleOpenSearch}
               className="w-9 h-9 flex items-center justify-center rounded-[8px] active:scale-90 transition-all duration-200"

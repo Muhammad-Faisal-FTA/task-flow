@@ -19,6 +19,7 @@ self.addEventListener("push", event => {
     icon:    payload.icon  ?? "/icons/icon-192x192.png",
     badge:   payload.badge ?? "/icons/icon-72x72.png",
     tag:     payload.taskId ?? "taskflow-notification",
+    silent:  false,
     renotify: true,
     data: {
       url:    payload.url    ?? "/",

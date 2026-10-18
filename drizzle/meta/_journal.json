@@ -43,6 +43,23 @@
       "when": 1791215884431,
       "tag": "0005_add_repeat_days_to_cdf_events",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791217497566,
+      "tag": "0006_add_task_reminder_sent_date",
+      "breakpoints": true
+<<<<<<< HEAD
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792306828231,
+      "tag": "0007_add_task_event_fields",
+      "breakpoints": true
+=======
+>>>>>>> 45d7f887b39200a875ea5181aa2f45005f59ddfd
     }
   ]
 }

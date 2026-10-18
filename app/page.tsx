@@ -17,6 +17,7 @@ import { QuickAddBar } from "@/components/task/QuickAddBar";
 import { FocusPopup } from "@/components/cdf/FocusPopup";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { Toast } from "@/components/ui/Toast";
+import { InAppTaskReminders } from "@/components/ui/InAppTaskReminders";
 import { cn } from "@/lib/cn";
 import type { TaskDTO } from "@/types/task";
 import type { TaskPriority } from "@/types/task";
@@ -30,6 +31,7 @@ export default function Page() {
     screen,
     navigate,
     tasks,
+    allTasks,
     toast,
     isLoading,
     isAuthenticated,
@@ -142,6 +144,10 @@ export default function Page() {
     return saveTask({
       title: input.title,
       listId: input.listId,
+      taskType: "task",
+      meetingLink: null,
+      location: null,
+      durationMinutes: null,
       completed: false,
       dueDate: input.date,
       dueTime: input.time,
@@ -194,6 +200,7 @@ export default function Page() {
         isSyncing={isSyncing}
         pendingCount={pendingCount + offlinePendingCount}
       />
+      <InAppTaskReminders tasks={allTasks} onOpenTask={state.openTask} />
 
       {/* ── DESKTOP: Sidebar ──────────────────────────────────────────── */}
       <div className="hidden md:block flex-shrink-0">

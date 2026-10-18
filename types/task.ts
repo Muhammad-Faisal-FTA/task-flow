@@ -13,6 +13,8 @@ export type RepeatFrequency =
   | "custom";
 
 export type TaskPriority = "A" | "B" | "C" | "D";
+export type TaskType = "task" | "event";
+export type RepeatTaskUpdateScope = "this" | "all";
 
 // ─── Task status (derived at read time — never stored in DB) ──────────────────
 export type TaskStatus =
@@ -40,6 +42,10 @@ export interface ITask {
   userId: DatabaseId;            // owner — indexed
   listId: DatabaseId;            // ref → TaskList — indexed
   title: string;
+  taskType: TaskType;
+  meetingLink: string | null;
+  location: string | null;
+  durationMinutes: number | null;
   completed: boolean;
   completedAt: Date | null;      // when it was completed
   dueDate: Date | null;          // indexed
@@ -65,6 +71,10 @@ export interface TaskDTO {
   userId: string;
   listId: string;
   title: string;
+  taskType: TaskType;
+  meetingLink: string | null;
+  location: string | null;
+  durationMinutes: number | null;
   completed: boolean;
   completedAt: string | null;    // ISO string
   dueDate: string | null;        // "YYYY-MM-DD"
@@ -110,6 +120,10 @@ export interface GroupedTasks {
 export interface CreateTaskInput {
   title: string;
   listId: string;
+  taskType?: TaskType;
+  meetingLink?: string | null;
+  location?: string | null;
+  durationMinutes?: number | null;
   dueDate?: string | null;       // "YYYY-MM-DD"
   dueTime?: string | null;       // "HH:MM"
   startTime?: string | null;     // "HH:MM"
@@ -123,6 +137,11 @@ export interface CreateTaskInput {
 }
 
 export interface UpdateTaskInput {
+  repeatScope?: RepeatTaskUpdateScope;
+  taskType?: TaskType;
+  meetingLink?: string | null;
+  location?: string | null;
+  durationMinutes?: number | null;
   title?: string;
   listId?: string;
   dueDate?: string | null;

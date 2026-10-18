@@ -29,15 +29,15 @@ export function NotificationBanner() {
     <div
       className="flex items-center gap-3 px-4 py-3"
       style={{
-        backgroundColor: "rgba(30,139,195,0.1)",
-        borderBottom:    "1px solid var(--color-border-default)",
+        backgroundColor: "var(--color-primary)",
+        borderBottom:    "2px solid var(--color-accent)",
       }}
     >
       <Bell
-        style={{ width: "16px", height: "16px", color: "var(--color-primary)", flexShrink: 0 }}
+        style={{ width: "16px", height: "16px", color: "#ffffff", flexShrink: 0 }}
       />
 
-      <p style={{ flex: 1, fontSize: "var(--text-sm)", color: "var(--color-text-secondary)" }}>
+      <p style={{ flex: 1, fontSize: "var(--text-sm)", color: "#ffffff" }}>
         Enable notifications to get reminders when tasks are due.
       </p>
 
@@ -49,8 +49,8 @@ export function NotificationBanner() {
           borderRadius:    "var(--radius-btn)",
           fontSize:        "var(--text-xs)",
           fontWeight:      700,
-          backgroundColor: "var(--color-primary)",
-          color:           "#ffffff",
+          backgroundColor: "#ffffff",
+          color:           "var(--color-primary)",
           border:          "none",
           cursor:          isLoading ? "not-allowed" : "pointer",
           opacity:         isLoading ? 0.7 : 1,
@@ -68,7 +68,7 @@ export function NotificationBanner() {
           border:     "none",
           cursor:     "pointer",
           padding:    "4px",
-          color:      "var(--color-text-hint)",
+          color:      "#ffffff",
           flexShrink: 0,
         }}
         aria-label="Dismiss"
