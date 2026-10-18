@@ -20,6 +20,22 @@ import type { AccessTokenPayload } from "@/types/auth";
 
 export const runtime = "nodejs";
 
+function safeErrorDetails(error: unknown): Record<string, string> {
+  if (!(error instanceof Error)) return { errorType: typeof error };
+
+  const details: Record<string, string> = { errorName: error.name };
+  if ("code" in error && typeof error.code === "string") {
+    details.errorCode = error.code;
+  }
+  if (error.cause instanceof Error) {
+    details.causeName = error.cause.name;
+    if ("code" in error.cause && typeof error.cause.code === "string") {
+      details.causeCode = error.cause.code;
+    }
+  }
+  return details;
+}
+
 // ─── Validation schema ────────────────────────────────────────────────────────
 const repeatDaysSchema = z.array(z.number().int().min(0).max(6)).max(7).refine(
   (days) => new Set(days).size === days.length,
@@ -27,6 +43,7 @@ const repeatDaysSchema = z.array(z.number().int().min(0).max(6)).max(7).refine(
 );
 
 const UpdateTaskSchema = z.object({
+  repeatScope: z.enum(["this", "all"]).optional(),
   title: z
     .string()
     .min(1,   "Title cannot be empty")
@@ -39,6 +56,10 @@ const UpdateTaskSchema = z.object({
     .refine(isValidObjectId, "Invalid listId format")
     .optional(),
 
+  taskType: z.enum(["task", "event"]).optional(),
+  meetingLink: z.string().url().max(2048).nullable().optional(),
+  location: z.string().max(255).nullable().optional(),
+  durationMinutes: z.number().int().min(1).max(1440).nullable().optional(),
   dueDate: z
     .string()
     .regex(
@@ -160,6 +181,9 @@ const patchHandler = async (
     return NextResponse.json({ data: task }, { status: 200 });
   } catch (err) {
     const { status, message } = resolveTaskError(err);
+    if (status >= 500) {
+      console.error("[PATCH /api/tasks/:taskId] Unexpected task update error:", safeErrorDetails(err));
+    }
     return NextResponse.json({ error: message }, { status });
   }
 };

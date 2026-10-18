@@ -8,7 +8,7 @@ import type { TaskDTO, TaskListDTO, GroupedTasks, CreateTaskInput, UpdateTaskInp
 
 type Task = typeof tasks.$inferSelect;
 type List = typeof taskLists.$inferSelect;
-const taskDto = (t: Task): TaskDTO => ({ id: t.id, userId: t.userId, listId: t.listId, title: t.title, completed: t.completed, completedAt: t.completedAt?.toISOString() ?? null, dueDate: formatDueDate(t.dueDate), dueTime: t.dueTime, startTime: t.startTime, endTime: t.endTime, priority: t.priority, cdfTracking: t.cdfTracking, repeat: t.repeat, repeatDays: t.repeatDays, repeatEndDate: formatDueDate(t.repeatEndDate), links: t.links, status: deriveStatus(t.dueDate, t.completed, t.deletedAt), deletedAt: t.deletedAt?.toISOString() ?? null, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString() });
+const taskDto = (t: Task): TaskDTO => ({ id: t.id, userId: t.userId, listId: t.listId, title: t.title, taskType: t.taskType, meetingLink: t.meetingLink, location: t.location, durationMinutes: t.durationMinutes, completed: t.completed, completedAt: t.completedAt?.toISOString() ?? null, dueDate: formatDueDate(t.dueDate), dueTime: t.dueTime, startTime: t.startTime, endTime: t.endTime, priority: t.priority, cdfTracking: t.cdfTracking, repeat: t.repeat, repeatDays: t.repeatDays, repeatEndDate: formatDueDate(t.repeatEndDate), links: t.links, status: deriveStatus(t.dueDate, t.completed, t.deletedAt), deletedAt: t.deletedAt?.toISOString() ?? null, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString() });
 const listDto = (l: List, taskCount = 0, overdueCount = 0): TaskListDTO => ({ id: l.id, userId: l.userId, name: l.name, color: l.color, isDefault: l.isDefault, taskCount, overdueCount, createdAt: l.createdAt.toISOString(), updatedAt: l.updatedAt.toISOString() });
 const ownedList = async (userId: string, id: string) => (await db.select().from(taskLists).where(and(eq(taskLists.id, id), eq(taskLists.userId, userId))).limit(1))[0];
 const ownedTask = async (userId: string, id: string) => (await db.select().from(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId))).limit(1))[0];
@@ -61,23 +61,103 @@ export async function createTask(userId: string, input: CreateTaskInput) {
   if ((repeat === "custom" && repeatDays.length === 0) || (dueDate && repeatEndDate && repeatEndDate < dueDate)) {
     throw new Error("INVALID_REPEAT_CONFIG");
   }
-  const [task] = await db.insert(tasks).values({ userId, listId: input.listId, title: input.title.trim(), dueDate, dueTime: input.dueTime ?? null, startTime: input.startTime ?? input.dueTime ?? null, endTime: input.endTime ?? null, priority: input.priority ?? "C", cdfTracking: input.cdfTracking ?? true, repeat, repeatDays, repeatEndDate, links: input.links ?? [] }).returning(); return taskDto(task);
+  const taskType = input.taskType ?? "task";
+  const [task] = await db.insert(tasks).values({ userId, listId: input.listId, title: input.title.trim(), taskType, meetingLink: taskType === "event" ? input.meetingLink ?? null : null, location: taskType === "event" ? input.location?.trim() || null : null, durationMinutes: taskType === "event" ? input.durationMinutes ?? null : null, dueDate, dueTime: input.dueTime ?? null, startTime: input.startTime ?? input.dueTime ?? null, endTime: input.endTime ?? null, priority: input.priority ?? "C", cdfTracking: input.cdfTracking ?? true, repeat, repeatDays, repeatEndDate, links: input.links ?? [] }).returning(); return taskDto(task);
 }
 export async function updateTask(userId: string, id: string, input: UpdateTaskInput) {
+  const { repeatScope, ...updateInput } = input;
   const current = await ownedTask(userId, id); if (!current) throw new Error("TASK_NOT_FOUND"); if (input.listId && !(await ownedList(userId, input.listId))) throw new Error("LIST_NOT_FOUND");
-  const repeat = input.repeat ?? current.repeat;
-  const repeatDays = repeat === "custom" ? input.repeatDays ?? current.repeatDays : [];
-  const dueDate = input.dueDate !== undefined ? parseDueDate(input.dueDate) : current.dueDate;
+  if (repeatScope === "this" && current.repeat !== "none") {
+    const nextDueDate = current.dueDate
+      ? nextRepeatDate(current.dueDate, current.repeat, current.repeatDays)
+      : null;
+    const hasNextOccurrence = Boolean(
+      nextDueDate &&
+      (!current.repeatEndDate || nextDueDate <= current.repeatEndDate),
+    );
+
+    if (hasNextOccurrence && nextDueDate) {
+      const completed = updateInput.completed ?? current.completed;
+      const [occurrence] = await db.transaction(async (tx) => {
+        const [created] = await tx.insert(tasks).values({
+          userId: current.userId,
+          listId: updateInput.listId ?? current.listId,
+          title: updateInput.title?.trim() ?? current.title,
+          taskType: updateInput.taskType ?? current.taskType,
+          meetingLink: updateInput.taskType === "task"
+            ? null
+            : updateInput.meetingLink !== undefined
+              ? updateInput.meetingLink
+              : current.meetingLink,
+          location: updateInput.taskType === "task"
+            ? null
+            : updateInput.location !== undefined
+              ? updateInput.location?.trim() || null
+              : current.location,
+          durationMinutes: updateInput.taskType === "task"
+            ? null
+            : updateInput.durationMinutes !== undefined
+              ? updateInput.durationMinutes
+              : current.durationMinutes,
+          completed,
+          completedAt: completed
+            ? (updateInput.completed === undefined
+                ? current.completedAt ?? new Date()
+                : new Date())
+            : null,
+          dueDate: updateInput.dueDate !== undefined
+            ? parseDueDate(updateInput.dueDate)
+            : current.dueDate,
+          dueTime: updateInput.dueTime !== undefined
+            ? updateInput.dueTime
+            : current.dueTime,
+          startTime: updateInput.startTime !== undefined
+            ? updateInput.startTime
+            : current.startTime,
+          endTime: updateInput.endTime !== undefined
+            ? updateInput.endTime
+            : current.endTime,
+          priority: updateInput.priority ?? current.priority,
+          cdfTracking: updateInput.cdfTracking ?? current.cdfTracking,
+          repeat: "none",
+          repeatDays: [],
+          repeatEndDate: null,
+          reminderSentFor: null,
+          links: updateInput.links ?? current.links,
+        }).returning();
+
+        await tx.update(tasks).set({
+          dueDate: nextDueDate,
+          completed: false,
+          completedAt: null,
+          reminderSentFor: null,
+          updatedAt: new Date(),
+        }).where(eq(tasks.id, id));
+
+        return [created];
+      });
+      return taskDto(occurrence);
+    }
+
+    updateInput.repeat = "none";
+    updateInput.repeatDays = [];
+    updateInput.repeatEndDate = null;
+  }
+
+  const repeat = updateInput.repeat ?? current.repeat;
+  const repeatDays = repeat === "custom" ? updateInput.repeatDays ?? current.repeatDays : [];
+  const dueDate = updateInput.dueDate !== undefined ? parseDueDate(updateInput.dueDate) : current.dueDate;
   const repeatEndDate = repeat === "none"
     ? null
-    : input.repeatEndDate !== undefined
-      ? parseDueDate(input.repeatEndDate)
+    : updateInput.repeatEndDate !== undefined
+      ? parseDueDate(updateInput.repeatEndDate)
       : current.repeatEndDate;
   if ((repeat === "custom" && repeatDays.length === 0) || (dueDate && repeatEndDate && repeatEndDate < dueDate)) {
     throw new Error("INVALID_REPEAT_CONFIG");
   }
-  const completed = input.completed ?? current.completed;
-  const [task] = await db.update(tasks).set({ ...(input.listId && { listId: input.listId }), ...(input.title !== undefined && { title: input.title.trim() }), ...(input.dueDate !== undefined && { dueDate }), ...(input.dueTime !== undefined && { dueTime: input.dueTime }), ...((input.dueDate !== undefined || input.startTime !== undefined || input.dueTime !== undefined) && { reminderSentFor: null }), ...(input.startTime !== undefined && { startTime: input.startTime }), ...(input.endTime !== undefined && { endTime: input.endTime }), ...(input.priority !== undefined && { priority: input.priority }), ...(input.cdfTracking !== undefined && { cdfTracking: input.cdfTracking }), ...(input.repeat !== undefined && { repeat }), repeatDays, repeatEndDate, ...(input.links && { links: input.links }), ...(input.completed !== undefined && { completed, completedAt: completed ? new Date() : null }), updatedAt: new Date() }).where(eq(tasks.id, id)).returning(); return taskDto(task);
+  const completed = updateInput.completed ?? current.completed;
+  const taskType = updateInput.taskType ?? current.taskType;
+  const [task] = await db.update(tasks).set({ ...(updateInput.listId && { listId: updateInput.listId }), ...(updateInput.title !== undefined && { title: updateInput.title.trim() }), ...(updateInput.taskType !== undefined && { taskType }), ...(taskType === "task" && updateInput.taskType === "task" ? { meetingLink: null, location: null, durationMinutes: null } : {}), ...(updateInput.meetingLink !== undefined && { meetingLink: updateInput.meetingLink }), ...(updateInput.location !== undefined && { location: updateInput.location?.trim() || null }), ...(updateInput.durationMinutes !== undefined && { durationMinutes: updateInput.durationMinutes }), ...(updateInput.dueDate !== undefined && { dueDate }), ...(updateInput.dueTime !== undefined && { dueTime: updateInput.dueTime }), ...((updateInput.dueDate !== undefined || updateInput.startTime !== undefined || updateInput.dueTime !== undefined) && { reminderSentFor: null }), ...(updateInput.startTime !== undefined && { startTime: updateInput.startTime }), ...(updateInput.endTime !== undefined && { endTime: updateInput.endTime }), ...(updateInput.priority !== undefined && { priority: updateInput.priority }), ...(updateInput.cdfTracking !== undefined && { cdfTracking: updateInput.cdfTracking }), ...(updateInput.repeat !== undefined && { repeat }), repeatDays, repeatEndDate, ...(updateInput.links && { links: updateInput.links }), ...(updateInput.completed !== undefined && { completed, completedAt: completed ? new Date() : null }), updatedAt: new Date() }).where(eq(tasks.id, id)).returning(); return taskDto(task);
 }
 async function resetDueRepeatingTask(task: Task): Promise<Task> {
   if (!task.completed || task.repeat === "none" || !task.dueDate) return task;

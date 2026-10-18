@@ -50,6 +50,10 @@ export function useAppState() {
     const blank: Task = {
       id: "",
       title: "",
+      taskType: "task",
+      meetingLink: null,
+      location: null,
+      durationMinutes: null,
       listId: lists[0]?.id ?? "default",
       completed: false,
       dueDate: new Date().toISOString().split("T")[0],

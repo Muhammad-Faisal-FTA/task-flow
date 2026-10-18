@@ -67,11 +67,31 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError<ApiError>) => {
-    // Format error for consistent handling
-    const apiError: ApiErrorWithStatus = new Error(
-      error.response?.data?.error ?? 'Something went wrong. Please try again.'
+    const method = error.config?.method?.toUpperCase() ?? 'API';
+    const path = error.config?.url?.split('?')[0] ?? 'request';
+    const status = error.response?.status;
+    const responseMessage = error.response?.data?.error;
+    const isGenericResponseMessage = Boolean(
+      responseMessage && /^(something went wrong|internal server error)\b/i.test(responseMessage)
     );
-    apiError.status = error.response?.status;
+
+    if (!error.response || !responseMessage || isGenericResponseMessage) {
+      console.warn('[API request failed]', {
+        method,
+        path,
+        status,
+        code: error.code,
+        responseMessage,
+      });
+    }
+
+    const apiError: ApiErrorWithStatus = new Error(
+      (responseMessage && !isGenericResponseMessage ? responseMessage : undefined) ??
+        (status
+          ? `Request failed with status ${status} (${method} ${path}).`
+          : `Unable to reach the server (${method} ${path}). Please try again.`)
+    );
+    apiError.status = status;
     apiError.fields = error.response?.data?.fields;
     
     return Promise.reject(apiError);

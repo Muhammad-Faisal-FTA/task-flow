@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { taskApi } from "@/services/apiService";
-import type { RepeatFrequency, TaskLink } from "@/types/task";
+import type { RepeatFrequency, RepeatTaskUpdateScope, TaskLink } from "@/types/task";
 import {
   getPendingActions,
   removePendingAction,
@@ -43,6 +43,10 @@ export function useOfflineSync(
           const created = await taskApi.createTask({
             title: String(action.payload.title ?? ""),
             listId: String(action.payload.listId ?? ""),
+            taskType: action.payload.taskType === "event" ? "event" : "task",
+            meetingLink: (action.payload.meetingLink as string | null | undefined) ?? null,
+            location: (action.payload.location as string | null | undefined) ?? null,
+            durationMinutes: (action.payload.durationMinutes as number | null | undefined) ?? null,
             dueDate: (action.payload.dueDate as string | null | undefined) ?? null,
             dueTime: (action.payload.dueTime as string | null | undefined) ?? null,
             startTime: (action.payload.startTime as string | null | undefined) ?? null,
@@ -60,6 +64,10 @@ export function useOfflineSync(
           await taskApi.updateTask(taskId, {
             title: String(action.payload.title ?? ""),
             listId: String(action.payload.listId ?? ""),
+            taskType: action.payload.taskType === "event" ? "event" : "task",
+            meetingLink: (action.payload.meetingLink as string | null | undefined) ?? null,
+            location: (action.payload.location as string | null | undefined) ?? null,
+            durationMinutes: (action.payload.durationMinutes as number | null | undefined) ?? null,
             dueDate: (action.payload.dueDate as string | null | undefined) ?? null,
             dueTime: (action.payload.dueTime as string | null | undefined) ?? null,
             startTime: (action.payload.startTime as string | null | undefined) ?? null,
@@ -69,6 +77,7 @@ export function useOfflineSync(
             repeat: action.payload.repeat as RepeatFrequency | undefined,
             repeatDays: action.payload.repeatDays as number[] | undefined,
             repeatEndDate: (action.payload.repeatEndDate as string | null | undefined) ?? null,
+            repeatScope: action.payload.repeatScope as RepeatTaskUpdateScope | undefined,
             completed: Boolean(action.payload.completed),
             links: action.payload.links as TaskLink[] | undefined,
           });

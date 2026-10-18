@@ -2,7 +2,7 @@
 // components/task/TaskCard.tsx
 "use client";
 
-import { CalendarDays, AlertCircle, RepeatIcon } from "lucide-react";
+import { CalendarDays, AlertCircle, RepeatIcon, MapPin, Timer, Video } from "lucide-react";
 import { TaskCheckbox } from "@/components/task/TaskCheckbox";
 import { cn } from "@/lib/cn";
 import type { Task, TaskList } from "@/types";
@@ -96,6 +96,54 @@ export function TaskCard({
 
         {/* Meta row */}
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+          {task.taskType === "event" && (
+            <>
+              <span
+                className="flex items-center gap-1 rounded-badge px-2 py-0.5 font-semibold"
+                style={{
+                  fontSize: "var(--text-xs)",
+                  color: "var(--color-primary)",
+                  backgroundColor: "color-mix(in srgb, var(--color-primary) 12%, var(--color-bg-card))",
+                  border: "1px solid color-mix(in srgb, var(--color-primary) 30%, transparent)",
+                }}
+              >
+                <Video aria-hidden="true" style={{ width: "11px", height: "11px" }} />
+                Event
+              </span>
+              {task.location && (
+                <span
+                  className="flex items-center gap-1"
+                  style={{ fontSize: "var(--text-xs)", color: "var(--color-text-secondary)" }}
+                >
+                  <MapPin aria-hidden="true" style={{ width: "11px", height: "11px" }} />
+                  {task.location}
+                </span>
+              )}
+              {task.durationMinutes && (
+                <span
+                  className="flex items-center gap-1"
+                  style={{ fontSize: "var(--text-xs)", color: "var(--color-text-secondary)" }}
+                >
+                  <Timer aria-hidden="true" style={{ width: "11px", height: "11px" }} />
+                  {formatDuration(task.durationMinutes)}
+                </span>
+              )}
+              {task.meetingLink && (
+                <a
+                  href={task.meetingLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(event) => event.stopPropagation()}
+                  className="flex items-center gap-1"
+                  style={{ fontSize: "var(--text-xs)", color: "var(--color-primary)" }}
+                >
+                  <Video aria-hidden="true" style={{ width: "11px", height: "11px" }} />
+                  Join
+                </a>
+              )}
+            </>
+          )}
+
           {/* Due date */}
           <span
             className="rounded-badge px-2 py-0.5 font-semibold"
@@ -238,4 +286,12 @@ function formatTime(time: string): string {
   const [h, m] = time.split(":").map(Number);
   const ampm = h >= 12 ? "PM" : "AM";
   return `${h % 12 || 12}:${m.toString().padStart(2, "0")} ${ampm}`;
+}
+
+function formatDuration(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (hours === 0) return `${remainingMinutes} min`;
+  if (remainingMinutes === 0) return `${hours} hr`;
+  return `${hours} hr ${remainingMinutes} min`;
 }

@@ -9,7 +9,10 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
+  Link as LinkIcon,
+  MapPin,
   Share2,
+  Timer,
 } from "lucide-react";
 import { HeaderBar } from "@/components/layout/HeaderBar";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -21,7 +24,7 @@ import { LinksSection } from "@/components/task/LinksSection";
 import { cn } from "@/lib/cn";
 import { REPEAT_OPTIONS } from "@/lib/data";
 import type { Task, TaskList } from "@/types";
-import type { TaskPriority } from "@/types/task";
+import type { RepeatTaskUpdateScope, TaskPriority } from "@/types/task";
 import { TaskLink } from "@/types/task";
 
 
@@ -31,6 +34,7 @@ interface DetailScreenState {
   selectedTask: Task | null;
   saveTask: (
     task: Omit<Task, "id" | "status" | "hasRepeatIcon"> & { id?: string },
+    repeatScope?: RepeatTaskUpdateScope,
   ) => boolean | Promise<boolean>;
   deleteTask: (id: string) => void;
   goBack: () => void;
@@ -127,12 +131,18 @@ function formatDisplayTime(time: string | null): string {
   return `${h % 12 || 12}:${m.toString().padStart(2, "0")} ${ampm}`;
 }
 
+function isValidMeetingLink(value: string | null | undefined): boolean {
+  if (!value?.trim()) return true;
+  return /^https?:\/\/\S+$/i.test(value) && value.length <= 2048;
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export function DetailScreen({ state }: DetailScreenProps) {
   const { selectedTask, saveTask, deleteTask, goBack, lists } = state;
 
   const [form, setForm] = useState<Task | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isRepeatScopeDialogOpen, setIsRepeatScopeDialogOpen] = useState(false);
   const [openPicker, setOpenPicker] = useState<"date" | "time" | null>(null);
 
   useEffect(() => {
@@ -154,6 +164,12 @@ export function DetailScreen({ state }: DetailScreenProps) {
   const canSave = Boolean(
     form.title.trim() &&
     !isSaving &&
+    ((form.taskType ?? "task") !== "event" ||
+      (isValidMeetingLink(form.meetingLink) &&
+        (form.durationMinutes == null ||
+          (Number.isInteger(form.durationMinutes) &&
+            form.durationMinutes >= 1 &&
+            form.durationMinutes <= 1440)))) &&
     !(form.repeat === "custom" && form.repeatDays.length === 0) &&
     !(form.dueDate && form.repeatEndDate && form.repeatEndDate < form.dueDate),
   );
@@ -164,8 +180,18 @@ export function DetailScreen({ state }: DetailScreenProps) {
   const togglePicker = (picker: "date" | "time") =>
     setOpenPicker((prev) => (prev === picker ? null : picker));
 
-  const handleSave = async () => {
+  const handleSave = async (repeatScope?: RepeatTaskUpdateScope) => {
     if (!canSave) return;
+    const isRepeatingTask = Boolean(
+      selectedTask?.id &&
+      selectedTask.repeat &&
+      selectedTask.repeat !== "none",
+    );
+    if (!isNew && isRepeatingTask && !repeatScope) {
+      setIsRepeatScopeDialogOpen(true);
+      return;
+    }
+
     setIsSaving(true);
     try {
       const saved = await saveTask({
@@ -179,12 +205,15 @@ export function DetailScreen({ state }: DetailScreenProps) {
         dueTime: form.dueTime,
         startTime: form.startTime ?? form.dueTime,
         endTime: form.endTime ?? null,
+        taskType: form.taskType ?? "task",
+        meetingLink: form.taskType === "event" ? form.meetingLink ?? null : null,
+        location: form.taskType === "event" ? form.location ?? null : null,
+        durationMinutes: form.taskType === "event" ? form.durationMinutes ?? null : null,
         repeat: form.repeat,
         repeatDays: form.repeatDays,
         repeatEndDate: form.repeatEndDate,
-        links:     form.links ?? [],     // ← add this
-
-      });
+        links: form.links ?? [],
+      }, repeatScope);
       if (saved) goBack();
     } finally {
       setIsSaving(false);
@@ -248,7 +277,44 @@ export function DetailScreen({ state }: DetailScreenProps) {
           backgroundColor: "var(--color-bg-app)",
         }}
       >
-        {/* Task title */}
+        {/* Task type */}
+        <fieldset className="mb-5">
+          <legend
+            className={labelCls}
+            style={{ fontSize: "var(--text-xs)", color: "var(--color-text-accent)" }}
+          >
+            Type
+          </legend>
+          <div className="grid grid-cols-2 gap-2">
+            {(["task", "event"] as const).map((taskType) => {
+              const selected = (form.taskType ?? "task") === taskType;
+              return (
+                <button
+                  key={taskType}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => setForm((previous) => previous ? {
+                    ...previous,
+                    taskType,
+                    ...(taskType === "task"
+                      ? { meetingLink: null, location: null, durationMinutes: null }
+                      : {}),
+                  } : previous)}
+                  className="rounded-card px-4 py-3 font-semibold capitalize transition-colors"
+                  style={{
+                    backgroundColor: selected ? "var(--color-primary)" : "var(--color-bg-card)",
+                    color: selected ? "#fff" : "var(--color-text-secondary)",
+                    border: `1px solid ${selected ? "var(--color-primary)" : "var(--color-border-default)"}`,
+                  }}
+                >
+                  {taskType}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        {/* Keep the task title/description available for both task and event. */}
         <div style={{ marginBottom: "20px" }}>
           <label
             className={labelCls}
@@ -267,6 +333,80 @@ export function DetailScreen({ state }: DetailScreenProps) {
             className="auth-input resize-none leading-relaxed w-full"
           />
         </div>
+
+        {form.taskType === "event" && (
+          <div
+            className="mb-5 space-y-4 rounded-card p-4"
+            style={{
+              backgroundColor: "var(--color-bg-card)",
+              border: "1px solid var(--color-border-default)",
+            }}
+          >
+            <p className={labelCls} style={{ fontSize: "var(--text-xs)", color: "var(--color-text-accent)" }}>
+              Event details
+            </p>
+            <label className="flex flex-col gap-2">
+              <span className="flex items-center gap-2 text-sm font-medium" style={{ color: "var(--color-text-secondary)" }}>
+                <LinkIcon className="h-4 w-4" />
+                Meeting link
+              </span>
+              <input
+                type="url"
+                value={form.meetingLink ?? ""}
+                onChange={(event) => update("meetingLink", event.target.value || null)}
+                placeholder="https://meet.google.com/..."
+                maxLength={2048}
+                className="auth-input w-full"
+              />
+              {!isValidMeetingLink(form.meetingLink) && (
+                <span role="alert" className="text-xs" style={{ color: "var(--color-overdue)" }}>
+                  Enter a valid http or https meeting link.
+                </span>
+              )}
+            </label>
+            <label className="flex flex-col gap-2">
+              <span className="flex items-center gap-2 text-sm font-medium" style={{ color: "var(--color-text-secondary)" }}>
+                <MapPin className="h-4 w-4" />
+                Location
+              </span>
+              <input
+                type="text"
+                value={form.location ?? ""}
+                onChange={(event) => update("location", event.target.value || null)}
+                placeholder="Add a location"
+                maxLength={255}
+                className="auth-input w-full"
+              />
+            </label>
+            <label className="flex flex-col gap-2">
+              <span className="flex items-center gap-2 text-sm font-medium" style={{ color: "var(--color-text-secondary)" }}>
+                <Timer className="h-4 w-4" />
+                Duration (minutes)
+              </span>
+              <input
+                type="number"
+                min={1}
+                max={1440}
+                step={1}
+                value={form.durationMinutes ?? ""}
+                onChange={(event) => update(
+                  "durationMinutes",
+                  event.target.value ? Number(event.target.value) : null,
+                )}
+                placeholder="e.g. 60"
+                className="auth-input w-full"
+              />
+              {form.durationMinutes != null &&
+                (!Number.isInteger(form.durationMinutes) ||
+                  form.durationMinutes < 1 ||
+                  form.durationMinutes > 1440) && (
+                  <span role="alert" className="text-xs" style={{ color: "var(--color-overdue)" }}>
+                    Duration must be between 1 and 1440 minutes.
+                  </span>
+                )}
+            </label>
+          </div>
+        )}
 
         {/* Completed toggle */}
         <div
@@ -633,7 +773,7 @@ export function DetailScreen({ state }: DetailScreenProps) {
         }}
       >
         <button
-          onClick={handleSave}
+          onClick={() => void handleSave()}
           disabled={!canSave}
           className="w-full py-4 rounded-card font-semibold transition-all duration-200 active:scale-[0.98]"
           style={{
@@ -651,6 +791,70 @@ export function DetailScreen({ state }: DetailScreenProps) {
           {isSaving ? "Saving…" : isNew ? "Add Task" : "Save Changes"}
         </button>
       </div>
+      {isRepeatScopeDialogOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.55)" }}
+          onClick={() => !isSaving && setIsRepeatScopeDialogOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="repeat-edit-title"
+            className="w-full max-w-sm rounded-card p-5 shadow-xl"
+            style={{
+              backgroundColor: "var(--color-bg-card)",
+              color: "var(--color-text-primary)",
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 id="repeat-edit-title" className="text-lg font-semibold">
+              Update repeating task
+            </h2>
+            <p className="mt-2 text-sm" style={{ color: "var(--color-text-secondary)" }}>
+              Choose which tasks should receive these changes.
+            </p>
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={() => {
+                  setIsRepeatScopeDialogOpen(false);
+                  void handleSave("this");
+                }}
+                className="w-full rounded-card px-4 py-3 text-left font-semibold"
+                style={{
+                  backgroundColor: "var(--color-bg-app)",
+                  color: "var(--color-text-primary)",
+                }}
+              >
+                Only this
+              </button>
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={() => {
+                  setIsRepeatScopeDialogOpen(false);
+                  void handleSave("all");
+                }}
+                className="w-full rounded-card px-4 py-3 text-left font-semibold"
+                style={{ backgroundColor: "var(--color-primary)", color: "#fff" }}
+              >
+                All tasks (of that card)
+              </button>
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={() => setIsRepeatScopeDialogOpen(false)}
+                className="w-full rounded-card px-4 py-2 text-sm"
+                style={{ color: "var(--color-text-secondary)" }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

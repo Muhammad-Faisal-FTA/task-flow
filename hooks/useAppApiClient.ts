@@ -18,15 +18,22 @@ import type {
   TaskListDTO,
   GroupedTasks,
   CreateTaskInput,
+  RepeatTaskUpdateScope,
   UpdateTaskInput,
 } from "@/types/task";
 import type { Task, TaskList } from "@/types";
+import { nextRepeatDate } from "@/utils/repeatDate";
+import { deriveStatus, formatDueDate, parseDueDate } from "@/utils/deriveStatus";
 
 // ─── Converters ───────────────────────────────────────────────────────────────
 function taskDtoToUi(dto: TaskDTO): Task {
   return {
     id:            dto.id,
     title:         dto.title,
+    taskType:      dto.taskType ?? "task",
+    meetingLink:   dto.meetingLink,
+    location:      dto.location,
+    durationMinutes: dto.durationMinutes,
     listId:        dto.listId,
     completed:     dto.completed,
     dueDate:       dto.dueDate,
@@ -252,6 +259,10 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
     setSelectedTask({
       id:            "",
       title:         "",
+      taskType:      "task",
+      meetingLink:   null,
+      location:      null,
+      durationMinutes: null,
       listId:        lists[0]?.id ?? "",
       completed:     false,
       dueDate:       null,
@@ -272,7 +283,8 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
 
   // ── Save task ──────────────────────────────────────────────────────────────
   const saveTask = useCallback(async (
-    taskInput: Omit<Task, "id" | "status" | "hasRepeatIcon"> & { id?: string }
+    taskInput: Omit<Task, "id" | "status" | "hasRepeatIcon"> & { id?: string },
+    repeatScope?: RepeatTaskUpdateScope,
   ): Promise<boolean> => {
     if (!taskInput.title.trim()) return false;
 
@@ -280,6 +292,10 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
     const optimisticTask: Task = {
       id: taskInput.id ?? `local-${Date.now()}`,
       title: taskInput.title,
+      taskType: taskInput.taskType ?? "task",
+      meetingLink: taskInput.meetingLink ?? null,
+      location: taskInput.location ?? null,
+      durationMinutes: taskInput.durationMinutes ?? null,
       listId: taskInput.listId,
       completed: taskInput.completed,
       dueDate: taskInput.dueDate,
@@ -297,6 +313,48 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
     };
 
     setTasks(prev => {
+      if (taskInput.id && repeatScope === "this") {
+        const current = prev.find(item => item.id === taskInput.id);
+        if (current && current.repeat !== "none") {
+          const currentDueDate = current.dueDate
+            ? parseDueDate(current.dueDate)
+            : null;
+          const nextDate = currentDueDate
+            ? nextRepeatDate(currentDueDate, current.repeat, current.repeatDays)
+            : null;
+          const nextDateString = nextDate ? formatDueDate(nextDate) : null;
+          const hasNextOccurrence = Boolean(
+            nextDateString &&
+            (!current.repeatEndDate || nextDateString <= current.repeatEndDate),
+          );
+          const occurrence: Task = {
+            ...optimisticTask,
+            id: `local-occurrence-${Date.now()}`,
+            status: deriveStatus(parseDueDate(taskInput.dueDate), taskInput.completed),
+            repeat: "none",
+            repeatDays: [],
+            repeatEndDate: null,
+            hasRepeatIcon: false,
+          };
+
+          if (hasNextOccurrence && nextDate) {
+            return [
+              ...prev.map(item => item.id === taskInput.id
+                ? {
+                    ...item,
+                    dueDate: nextDateString,
+                    completed: false,
+                    status: deriveStatus(nextDate, false),
+                  }
+                : item),
+              occurrence,
+            ];
+          }
+
+          return prev.map(item => item.id === taskInput.id ? occurrence : item);
+        }
+      }
+
       if (taskInput.id) {
         return prev.map(item => item.id === taskInput.id ? optimisticTask : item);
       }
@@ -311,6 +369,10 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
           {
             title: taskInput.title,
             listId: taskInput.listId,
+            taskType: taskInput.taskType ?? "task",
+            meetingLink: taskInput.meetingLink ?? null,
+            location: taskInput.location ?? null,
+            durationMinutes: taskInput.durationMinutes ?? null,
             dueDate: taskInput.dueDate,
             dueTime: taskInput.dueTime,
             startTime: taskInput.startTime,
@@ -320,6 +382,7 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
             repeat: taskInput.repeat,
             repeatDays: taskInput.repeatDays,
             repeatEndDate: taskInput.repeatEndDate,
+            repeatScope,
             completed: taskInput.completed,
             links: taskInput.links ?? [],
             id: taskInput.id,
@@ -337,6 +400,10 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
         await taskApi.updateTask(taskInput.id, {
           title:     taskInput.title,
           listId:    taskInput.listId,
+          taskType: taskInput.taskType ?? "task",
+          meetingLink: taskInput.meetingLink ?? null,
+          location: taskInput.location ?? null,
+          durationMinutes: taskInput.durationMinutes ?? null,
           dueDate:   taskInput.dueDate,
           dueTime:   taskInput.dueTime,
           startTime: taskInput.startTime,
@@ -348,6 +415,7 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
           repeatEndDate: taskInput.repeatEndDate,
           completed: taskInput.completed,
           links:     taskInput.links ?? [],
+          repeatScope,
         });
         showToast("Task updated ✓");
       } else {
@@ -355,6 +423,10 @@ const [undoTimeout, setUndoTimeout] = useState<ReturnType<typeof setTimeout> | n
         await taskApi.createTask({
           title:   taskInput.title,
           listId:  taskInput.listId,
+          taskType: taskInput.taskType ?? "task",
+          meetingLink: taskInput.meetingLink ?? null,
+          location: taskInput.location ?? null,
+          durationMinutes: taskInput.durationMinutes ?? null,
           dueDate: taskInput.dueDate,
           dueTime: taskInput.dueTime,
           startTime: taskInput.startTime,

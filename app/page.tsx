@@ -144,6 +144,10 @@ export default function Page() {
     return saveTask({
       title: input.title,
       listId: input.listId,
+      taskType: "task",
+      meetingLink: null,
+      location: null,
+      durationMinutes: null,
       completed: false,
       dueDate: input.date,
       dueTime: input.time,

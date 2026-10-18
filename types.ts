@@ -18,6 +18,10 @@ export type Screen = "home" | "detail" | "lists";
 export interface Task {
   id:            string;
   title:         string;
+  taskType?:     import("@/types/task").TaskType;
+  meetingLink?:  string | null;
+  location?:     string | null;
+  durationMinutes?: number | null;
   listId:        string;
   completed:     boolean;
   dueDate:       string | null;   // "YYYY-MM-DD"
