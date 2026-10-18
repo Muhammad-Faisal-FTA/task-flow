@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "node --max-old-space-size=8192 --max-semi-space-size=256 ./node_modules/next/dist/bin/next dev --webpack",
-    "build": "node next build  --webpack",
+    "build": "next build --webpack",
     "generate-icons": "node scripts/generate-icons.mjs",
-    "start": "node next start",
+    "start": "next start",
     "test": "jest",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
