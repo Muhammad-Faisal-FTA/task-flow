@@ -4,23 +4,8 @@
 
 import type { TaskStatus } from "@/types/task";
 
-// ─── Date boundary helpers ────────────────────────────────────────────────────
-// All comparisons use start-of-day to avoid time-of-day inconsistencies.
-// e.g. a task due "today" at 11:59 PM is still "today" at 11:58 PM.
-
-function startOfDay(date: Date): Date {
-  return new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate(),
-    0, 0, 0, 0
-  );
-}
-
-function addDays(date: Date, days: number): Date {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
+function calendarDayNumber(year: number, month: number, day: number): number {
+  return Date.UTC(year, month, day) / 86_400_000;
 }
 
 // ─── Core derive function ─────────────────────────────────────────────────────
@@ -51,16 +36,23 @@ export function deriveStatus(
   // They are filtered separately in queries
   if (completed) return "today";
 
-  const now      = new Date();
-  const todayStart    = startOfDay(now);
-  const tomorrowStart = startOfDay(addDays(now, 1));
-  const nextWeekEnd   = startOfDay(addDays(now, 7));
-  const dueDateStart  = startOfDay(dueDate);
+  const now = new Date();
+  const dueDay = calendarDayNumber(
+    dueDate.getUTCFullYear(),
+    dueDate.getUTCMonth(),
+    dueDate.getUTCDate(),
+  );
+  const today = calendarDayNumber(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  );
+  const daysFromToday = dueDay - today;
 
-  if (dueDateStart < todayStart)    return "overdue";
-  if (dueDateStart.getTime() === todayStart.getTime())    return "today";
-  if (dueDateStart.getTime() === tomorrowStart.getTime()) return "tomorrow";
-  if (dueDateStart <= nextWeekEnd)  return "next_week";
+  if (daysFromToday < 0) return "overdue";
+  if (daysFromToday === 0) return "today";
+  if (daysFromToday === 1) return "tomorrow";
+  if (daysFromToday <= 7) return "next_week";
   return "future";
 }
 
