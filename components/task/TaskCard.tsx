@@ -47,7 +47,7 @@ export function TaskCard({
   };
 
   const dateStr = task.dueDate
-    ? formatDisplayDate(task.dueDate, task.status)
+    ? formatDisplayDate(task.dueDate)
     : null;
 
   return (
@@ -261,8 +261,9 @@ export function TaskCard({
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function formatDisplayDate(iso: string, status: string): string {
-  const d = new Date(iso);
+function formatDisplayDate(iso: string): string {
+  const [year, month, day] = iso.slice(0, 10).split("-").map(Number);
+  const d = new Date(year, month - 1, day);
   const today = new Date();
   const tom = new Date(today);
   tom.setDate(today.getDate() + 1);
