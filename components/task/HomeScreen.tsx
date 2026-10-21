@@ -61,6 +61,10 @@ const SECTION_DOT: Record<Task["status"], string> = {
   nodate: "var(--color-text-hint)",
 };
 
+function isTimedTaskOnDate(task: Task, date: string): boolean {
+  return Boolean(task.dueTime && task.dueDate?.slice(0, 10) === date);
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export function HomeScreen({ state }: { state: HomeScreenState }) {
   const {
@@ -164,9 +168,7 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
   const isEmpty = tasks.length === 0;
   const now = new Date();
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  const timedTodayTasks = tasks.filter(
-    (task) => task.dueDate === today && task.dueTime,
-  );
+  const timedTodayTasks = tasks.filter((task) => isTimedTaskOnDate(task, today));
 
   return (
     <div className="relative flex h-full flex-col">
@@ -324,7 +326,7 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
               (t) =>
                 t.status === status &&
                 !t.completed &&
-                !(status === "today" && t.dueDate === today && t.dueTime),
+                !(status === "today" && isTimedTaskOnDate(t, today)),
             );
 
             if (sectionTasks.length === 0) return null;
