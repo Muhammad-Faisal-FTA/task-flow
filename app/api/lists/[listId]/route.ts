@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { withAuthAndId } from "@/middlewares/validateObjectId";
+import { withFeatureAuthAndId } from "@/middlewares/validateObjectId";
 import {
   getUserLists,
   updateList,
@@ -127,6 +127,6 @@ const deleteHandler = async (
 };
 
 // ─── Export with middleware ───────────────────────────────────────────────────
-export const GET    = withAuthAndId("listId", getHandler);
-export const PATCH  = withAuthAndId("listId", patchHandler);
-export const DELETE = withAuthAndId("listId", deleteHandler);
+export const GET    = withFeatureAuthAndId("lists", "listId", getHandler);
+export const PATCH  = withFeatureAuthAndId("lists", "listId", patchHandler);
+export const DELETE = withFeatureAuthAndId("lists", "listId", deleteHandler);

@@ -11,8 +11,8 @@ export interface IUser {
   isVerified: boolean;
   verificationOtpHash: string | null;
   verificationOtpExpiry: Date | null;
-  resetPasswordToken: string | null;
-  resetPasswordExpiry: Date | null;
+  resetPasswordOtpHash: string | null;
+  resetPasswordOtpExpiry: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,12 +27,6 @@ export interface AccessTokenPayload {
 export interface RefreshTokenPayload {
   userId: string;
   type: "refresh";
-}
-
-export interface EmailTokenPayload {
-  userId: string;
-  email: string;
-  type: "email_verify" | "password_reset";
 }
 
 // ─── Extends NextRequest to carry decoded user after auth middleware ───────────

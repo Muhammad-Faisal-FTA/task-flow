@@ -1,62 +1,83 @@
 {
-  "version": "7",
-  "dialect": "postgresql",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "7",
-      "when": 1789439273558,
-      "tag": "0000_nostalgic_mephistopheles",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1789443666818,
-      "tag": "0001_opposite_nocturne",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1789447266818,
-      "tag": "0002_add_task_times",
-      "breakpoints": false
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1791109713080,
-      "tag": "0003_add_task_priority_and_cdf_tracking",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1791215721267,
-      "tag": "0004_add_repeat_days_and_end_date",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1791215884431,
-      "tag": "0005_add_repeat_days_to_cdf_events",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1791217497566,
-      "tag": "0006_add_task_reminder_sent_date",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1792306828231,
-      "tag": "0007_add_task_event_fields",
-      "breakpoints": true
-    }
-  ]
+    "version":  "7",
+    "dialect":  "postgresql",
+    "entries":  [
+                    {
+                        "idx":  0,
+                        "version":  "7",
+                        "when":  1789439273558,
+                        "tag":  "0000_nostalgic_mephistopheles",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  1,
+                        "version":  "7",
+                        "when":  1789443666818,
+                        "tag":  "0001_opposite_nocturne",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  2,
+                        "version":  "7",
+                        "when":  1789447266818,
+                        "tag":  "0002_add_task_times",
+                        "breakpoints":  false
+                    },
+                    {
+                        "idx":  3,
+                        "version":  "7",
+                        "when":  1791109713080,
+                        "tag":  "0003_add_task_priority_and_cdf_tracking",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  4,
+                        "version":  "7",
+                        "when":  1791215721267,
+                        "tag":  "0004_add_repeat_days_and_end_date",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  5,
+                        "version":  "7",
+                        "when":  1791215884431,
+                        "tag":  "0005_add_repeat_days_to_cdf_events",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  6,
+                        "version":  "7",
+                        "when":  1791217497566,
+                        "tag":  "0006_add_task_reminder_sent_date",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  7,
+                        "version":  "7",
+                        "when":  1792306828231,
+                        "tag":  "0007_add_task_event_fields",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  8,
+                        "version":  "7",
+                        "when":  1793424000000,
+                        "tag":  "0008_admin_access_control",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  9,
+                        "version":  "7",
+                        "when":  1793682000000,
+                        "tag":  "0009_password_reset_otp",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  10,
+                        "version":  "7",
+                        "when":  1793772000000,
+                        "tag":  "0010_cdf_tracking_default_off",
+                        "breakpoints":  true
+                    }
+                ]
 }

@@ -3,6 +3,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAccessToken } from "@/lib/jwt";
 import type { AccessTokenPayload } from "@/types/auth";
+import { canAccessFeature, type AdminFeature } from "@/services/accessControlService";
+import { db } from "@/db";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 // The path-specific params shape is supplied by Next when a route is generated.
@@ -59,9 +63,22 @@ export function withAuth(handler: AuthenticatedHandler) {
       );
     }
 
-    // 3. Call the actual handler with verified user
+    // Load persisted authority so role changes apply immediately.
+    const [account] = await db.select({ role: users.role }).from(users)
+      .where(eq(users.id, result.payload.userId)).limit(1);
+    if (!account) return NextResponse.json({ error: "Account not found." }, { status: 401 });
     return handler(req, context, result.payload);
   };
+}
+
+/** Enforces feature access on the server for every wrapped API request. */
+export function withFeatureAuth(feature: AdminFeature, handler: AuthenticatedHandler) {
+  return withAuth(async (req, context, user) => {
+    if (!(await canAccessFeature(user.userId, feature))) {
+      return NextResponse.json({ error: "Feature access is disabled." }, { status: 403 });
+    }
+    return handler(req, context, user);
+  });
 }
 
 // ─── withOptionalAuth ─────────────────────────────────────────────────────────

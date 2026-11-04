@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { withAuth } from "@/middlewares/authMiddleware";
+import { withFeatureAuth } from "@/middlewares/authMiddleware";
 import { withRateLimit, RATE_LIMIT_PRESETS } from "@/middlewares/rateLimit";
 import {
   getUserLists,
@@ -94,8 +94,8 @@ const postHandler = async (
 };
 
 // ─── Export with middleware ───────────────────────────────────────────────────
-export const GET  = withAuth(getHandler);
+export const GET  = withFeatureAuth("lists", getHandler);
 export const POST = withRateLimit(
   RATE_LIMIT_PRESETS.api,
-  withAuth(postHandler) as any
+  withFeatureAuth("lists", postHandler)
 );

@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+admin/node_modules
+admin/.next
 /.pnp
 .pnp.*
 .yarn/*
@@ -47,3 +49,9 @@ next-env.d.ts
 branch_structure.json
 temp_auto_push.bat
 temp_interactive_push.bat
+
+
+FEATURES.md
+FEATURES.pdf
+SDD.md
+SDD.pdf

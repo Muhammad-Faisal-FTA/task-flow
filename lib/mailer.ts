@@ -1,6 +1,5 @@
 // lib/mailer.ts
 import nodemailer, { Transporter } from "nodemailer";
-import { buildAppUrl } from "@/lib/emailLinks";
 
 export interface MailerConfig {
   host: string;
@@ -8,7 +7,6 @@ export interface MailerConfig {
   user: string;
   pass: string;
   from: string;
-  baseUrl: string;
 }
 
 export function resolveMailerConfig(env: Partial<NodeJS.ProcessEnv> = process.env): MailerConfig | null {
@@ -18,13 +16,9 @@ export function resolveMailerConfig(env: Partial<NodeJS.ProcessEnv> = process.en
     SMTP_USER,
     SMTP_PASS: rawSmtpPass,
     SMTP_FROM,
-    APP_URL,
-    VERCEL_URL,
   } = env;
 
   const SMTP_PASS = rawSmtpPass?.replace(/\s/g, "");
-  const baseUrl = APP_URL || (VERCEL_URL ? `https://${VERCEL_URL}` : "http://localhost:3000");
-
   const required = [
     ["SMTP_HOST", SMTP_HOST],
     ["SMTP_PORT", SMTP_PORT],
@@ -35,10 +29,9 @@ export function resolveMailerConfig(env: Partial<NodeJS.ProcessEnv> = process.en
 
   const missing = required.filter(([, value]) => !value).map(([name]) => name);
 
-  if (missing.length > 0 || !baseUrl) {
+  if (missing.length > 0) {
     console.error("[mailer] Missing required env vars:", {
       missing,
-      baseUrl: !!baseUrl,
     });
     return null;
   }
@@ -49,7 +42,6 @@ export function resolveMailerConfig(env: Partial<NodeJS.ProcessEnv> = process.en
     user: SMTP_USER!,
     pass: SMTP_PASS!,
     from: SMTP_FROM!,
-    baseUrl,
   };
 }
 
@@ -181,29 +173,6 @@ function escapeHtml(value: string): string {
 }
 
 // ─── CTA Button ───────────────────────────────────────────────────────────────
-// ↓ FIXED: proper opening <a href="..."> tag — was missing before
-function ctaButton(href: string, label: string): string {
-  return `
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;">
-      <tr>
-        <td align="center">
-          <a href="${href}" style="
-            display:inline-block;
-            background-color:#1565A8;
-            color:#FFFFFF;
-            font-size:15px;
-            font-weight:600;
-            text-decoration:none;
-            padding:14px 32px;
-            border-radius:10px;
-            letter-spacing:0.3px;
-          ">${label}</a>
-        </td>
-      </tr>
-    </table>
-  `;
-}
-
 // ─── Verification email ───────────────────────────────────────────────────────
 export async function sendVerificationEmail(
   to:    string,
@@ -241,11 +210,9 @@ export async function sendVerificationEmail(
 export async function sendPasswordResetEmail(
   to:    string,
   name:  string,
-  token: string
+  otp: string
 ): Promise<void> {
-  const resetUrl = buildAppUrl("/reset-password", { token }, mailerConfig?.baseUrl ?? "http://localhost:3000");
   const safeName = escapeHtml(name);
-  const safeResetUrl = escapeHtml(resetUrl);
 
   const body = `
     <h2 style="margin:0 0 8px;font-size:20px;color:#FFFFFF;font-weight:600;">
@@ -253,18 +220,14 @@ export async function sendPasswordResetEmail(
     </h2>
     <p style="margin:0 0 20px;font-size:15px;color:#B0C4DE;line-height:1.6;">
       Hello ${safeName}, we received a request to reset the password for your TaskFlow account.
-      Use the button below to choose a new password.
+      Enter this code in TaskFlow to choose a new password.
     </p>
-
-    ${ctaButton(safeResetUrl, "Reset password")}
-
-    <p style="margin:20px 0 0;font-size:13px;color:#546E7A;line-height:1.5;">
-      If the button does not work, copy and paste this link into your browser:<br/>
-      <span style="color:#29B6F6;word-break:break-all;">${safeResetUrl}</span>
+    <p style="margin:24px 0;text-align:center;font-size:32px;font-weight:700;letter-spacing:8px;color:#29B6F6;">
+      ${otp}
     </p>
     <p style="margin:16px 0 0;font-size:13px;color:#546E7A;">
-      This link expires in <strong style="color:#B0C4DE;">1 hour</strong>.
-      If you did not request a password reset, you can disregard this message. Your password will not change unless the link is used.
+      This code expires in <strong style="color:#B0C4DE;">10 minutes</strong>.
+      If you did not request a password reset, you can disregard this message. Your password will not change unless the code is used.
     </p>
   `;
 
@@ -272,6 +235,6 @@ export async function sendPasswordResetEmail(
     to,
     subject: "Reset your TaskFlow password",
     html: baseTemplate("Reset your password - TaskFlow", body),
-    text: `Hello ${name},\n\nWe received a request to reset the password for your TaskFlow account. Use this link to choose a new password:\n${resetUrl}\n\nThis link expires in 1 hour. If you did not request a password reset, you can disregard this message. Your password will not change unless the link is used.\n\nTaskFlow Support`,
+    text: `Hello ${name},\n\nWe received a request to reset the password for your TaskFlow account. Enter this code in TaskFlow to choose a new password: ${otp}\n\nThis code expires in 10 minutes. If you did not request a password reset, you can disregard this message. Your password will not change unless the code is used.\n\nTaskFlow Support`,
   });
 }

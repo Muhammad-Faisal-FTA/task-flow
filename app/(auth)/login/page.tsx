@@ -52,7 +52,7 @@ export default function LoginPage() {
       // Special case: unverified email — give actionable message
       if (error.status === 403) {
         setServerError(
-          "Your email is not verified. Please check your inbox for the verification link.",
+          "Your email is not verified. Enter the 6-digit code sent to your inbox.",
         );
       } else {
         setServerError(error.message ?? "Login failed. Please try again.");
