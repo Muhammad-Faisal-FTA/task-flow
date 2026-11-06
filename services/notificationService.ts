@@ -3,16 +3,19 @@ import { db } from "@/db";
 import { pushSubscriptions, tasks } from "@/db/schema";
 import { type PushPayload, type PushSubscriptionData, sendPushNotification } from "@/lib/webpush";
 import { isTaskReminderDue } from "@/utils/notificationTiming";
+import { isServiceEnabled } from "@/services/accessControlService";
 
 export async function saveSubscription(userId: string, sub: PushSubscriptionData, userAgent?: string): Promise<void> {
   await db.insert(pushSubscriptions).values({ userId, endpoint: sub.endpoint, p256dh: sub.keys.p256dh, auth: sub.keys.auth, userAgent }).onConflictDoUpdate({ target: pushSubscriptions.endpoint, set: { userId, p256dh: sub.keys.p256dh, auth: sub.keys.auth, userAgent, updatedAt: new Date() } });
 }
 export async function removeSubscription(userId: string, endpoint: string): Promise<void> { await db.delete(pushSubscriptions).where(and(eq(pushSubscriptions.userId, userId), eq(pushSubscriptions.endpoint, endpoint))); }
 export async function sendAtTimeReminders() {
+  if (!(await isServiceEnabled("push"))) return { sent: 0, failed: 0, skipped: 0 };
   const now = new Date(), day = new Date(now); day.setHours(0, 0, 0, 0); const tomorrow = new Date(day); tomorrow.setDate(day.getDate() + 1);
   const due = await db.select().from(tasks).where(and(gte(tasks.dueDate, day), lt(tasks.dueDate, tomorrow), or(isNotNull(tasks.startTime), isNotNull(tasks.dueTime)), eq(tasks.completed, false), isNull(tasks.deletedAt)));
   let sent = 0, failed = 0, skipped = 0;
   for (const task of due) {
+    if (!(await isServiceEnabled("push", task.userId))) { skipped++; continue; }
     const startTime = task.startTime ?? task.dueTime;
     if (!task.dueDate || !startTime) continue;
     const [h, m] = startTime.split(":").map(Number), at = new Date(day); at.setHours(h, m);

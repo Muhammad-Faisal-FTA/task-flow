@@ -13,6 +13,31 @@ const ForgotPasswordSchema = z.object({
     .toLowerCase(),
 });
 
+function getDatabaseErrorDetails(error: unknown): Record<string, string> {
+  if (!(error instanceof Error)) return { errorType: typeof error };
+
+  const details: Record<string, string> = { errorName: error.name };
+  if ("code" in error && typeof error.code === "string") {
+    details.errorCode = error.code;
+  }
+  if ("column" in error && typeof error.column === "string") {
+    details.column = error.column;
+  }
+  if ("table" in error && typeof error.table === "string") {
+    details.table = error.table;
+  }
+  return details;
+}
+
+function isMissingResetOtpSchema(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+
+  const code = "code" in error ? error.code : undefined;
+  const message = error.message.toLowerCase();
+  const missingColumn = code === "42703" || message.includes("does not exist");
+  return missingColumn && /reset_password_otp_(hash|expiry)/.test(message);
+}
+
 // ─── Handler ──────────────────────────────────────────────────────────────────
 const handler = async (req: NextRequest): Promise<NextResponse> => {
   try {
@@ -42,6 +67,21 @@ const handler = async (req: NextRequest): Promise<NextResponse> => {
 
     return NextResponse.json(result, { status: 200 });
   } catch (err) {
+    console.error(
+      "[POST /api/auth/forgot-password] Request failed",
+      getDatabaseErrorDetails(err),
+    );
+
+    if (isMissingResetOtpSchema(err)) {
+      return NextResponse.json(
+        {
+          error:
+            "Password reset is temporarily unavailable because the database needs an update. Please contact support.",
+        },
+        { status: 503 },
+      );
+    }
+
     const { status, message } = resolveAuthError(err);
     return NextResponse.json({ error: message }, { status });
   }

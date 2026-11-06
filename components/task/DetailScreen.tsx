@@ -20,6 +20,7 @@ import { SelectField } from "@/components/ui/SelectField";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { TimePicker } from "@/components/ui/TimePicker";
 import { LinksSection } from "@/components/task/LinksSection";
+import { TaskDurationField } from "@/components/task/TaskDurationField";
 
 import { cn } from "@/lib/cn";
 import { REPEAT_OPTIONS } from "@/lib/data";
@@ -150,7 +151,7 @@ export function DetailScreen({ state }: DetailScreenProps) {
       setForm({
         ...selectedTask,
         priority: selectedTask.priority ?? "C",
-        cdfTracking: selectedTask.cdfTracking ?? true,
+        cdfTracking: selectedTask.cdfTracking ?? false,
       });
       setOpenPicker(null);
     }
@@ -200,7 +201,7 @@ export function DetailScreen({ state }: DetailScreenProps) {
         listId: form.listId,
         completed: form.completed,
         priority: form.priority ?? "C",
-        cdfTracking: form.cdfTracking ?? true,
+        cdfTracking: form.cdfTracking ?? false,
         dueDate: form.dueDate,
         dueTime: form.dueTime,
         startTime: form.startTime ?? form.dueTime,
@@ -208,7 +209,7 @@ export function DetailScreen({ state }: DetailScreenProps) {
         taskType: form.taskType ?? "task",
         meetingLink: form.taskType === "event" ? form.meetingLink ?? null : null,
         location: form.taskType === "event" ? form.location ?? null : null,
-        durationMinutes: form.taskType === "event" ? form.durationMinutes ?? null : null,
+        durationMinutes: form.durationMinutes ?? null,
         repeat: form.repeat,
         repeatDays: form.repeatDays,
         repeatEndDate: form.repeatEndDate,
@@ -297,7 +298,7 @@ export function DetailScreen({ state }: DetailScreenProps) {
                     ...previous,
                     taskType,
                     ...(taskType === "task"
-                      ? { meetingLink: null, location: null, durationMinutes: null }
+                      ? { meetingLink: null, location: null }
                       : {}),
                   } : previous)}
                   className="rounded-card px-4 py-3 font-semibold capitalize transition-colors"
@@ -408,6 +409,8 @@ export function DetailScreen({ state }: DetailScreenProps) {
           </div>
         )}
 
+        {form.taskType !== "event" && <TaskDurationField value={form.durationMinutes ?? null} onChange={(value) => update("durationMinutes", value)} />}
+
         {/* Completed toggle */}
         <div
           className={rowCls}
@@ -462,7 +465,7 @@ export function DetailScreen({ state }: DetailScreenProps) {
 
         <div
           className={rowCls}
-          onClick={() => update("cdfTracking", !(form.cdfTracking ?? true))}
+          onClick={() => update("cdfTracking", !(form.cdfTracking ?? false))}
           style={{
             marginBottom: "20px",
             backgroundColor: "var(--color-bg-card)",
@@ -471,15 +474,15 @@ export function DetailScreen({ state }: DetailScreenProps) {
         >
           <div className="flex items-center gap-3">
             <Checkbox
-              checked={form.cdfTracking ?? true}
-              onChange={() => update("cdfTracking", !(form.cdfTracking ?? true))}
+              checked={form.cdfTracking ?? false}
+              onChange={() => update("cdfTracking", !(form.cdfTracking ?? false))}
             />
             <span style={{ fontSize: "var(--text-base)", color: "var(--color-text-secondary)" }}>
               Track this task in CDF
             </span>
           </div>
           <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-hint)" }}>
-            {(form.cdfTracking ?? true) ? "ON" : "OFF"}
+            {(form.cdfTracking ?? false) ? "ON" : "OFF"}
           </span>
         </div>
 

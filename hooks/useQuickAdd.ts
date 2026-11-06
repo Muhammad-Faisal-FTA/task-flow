@@ -132,7 +132,7 @@ export function useQuickAdd(
           startTime: null,
           endTime: null,
           priority: "C",
-          cdfTracking: true,
+          cdfTracking: false,
           repeat: "none",
           repeatDays: [],
           repeatEndDate: null,

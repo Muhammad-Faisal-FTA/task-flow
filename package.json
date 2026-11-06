@@ -2,6 +2,7 @@
   "name": "TaskFlow",
   "version": "0.1.0",
   "private": true,
+  "workspaces": ["admin"],
   "scripts": {
     "dev": "node api.js && node --max-old-space-size=8192 --max-semi-space-size=256 ./node_modules/next/dist/bin/next dev --webpack",
     "build": "node api.js && next build --webpack",
@@ -13,7 +14,10 @@
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "admin:dev": "npm run dev --workspace @taskflow/admin",
+    "admin:build": "npm run build --workspace @taskflow/admin",
+    "admin:start": "npm run start --workspace @taskflow/admin"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

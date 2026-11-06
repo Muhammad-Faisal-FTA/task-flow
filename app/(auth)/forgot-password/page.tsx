@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -24,6 +25,7 @@ type ForgotPasswordFormData = z.infer<typeof ForgotPasswordSchema>;
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function ForgotPasswordPage() {
+  const router = useRouter();
   const { forgotPassword } = useAuth();
 
   const [serverError, setServerError] = useState<string | null>(null);
@@ -46,6 +48,14 @@ export default function ForgotPasswordPage() {
 
     try {
       const result = await forgotPassword(data.email);
+      try {
+        window.sessionStorage.setItem(
+          "taskflow:password-reset-email",
+          data.email.trim().toLowerCase(),
+        );
+      } catch {
+        // Keep the successful request result even when browser storage is blocked.
+      }
       setSuccessMessage(result.message);
     } catch (err) {
       const error = err as Error & { status?: number };
@@ -80,7 +90,7 @@ export default function ForgotPasswordPage() {
             Check your inbox
           </h1>
           <p className="text-[14px]" style={{ color: "#B0C4DE" }}>
-            We sent a reset link to{" "}
+            If an account exists, we sent a 6-digit reset code to{" "}
             <span className="font-semibold text-white">
               {getValues("email")}
             </span>
@@ -98,7 +108,7 @@ export default function ForgotPasswordPage() {
           }}
         >
           <p>
-            • The link expires in <strong className="text-white">1 hour</strong>
+            • The code expires in <strong className="text-white">10 minutes</strong>
           </p>
           <p>• Check your spam folder if you don&apos;t see it</p>
           <p>
@@ -107,8 +117,8 @@ export default function ForgotPasswordPage() {
           </p>
         </div>
 
-        <AuthButton variant="ghost" onClick={() => setSuccessMessage(null)}>
-          Send another link
+        <AuthButton variant="ghost" onClick={() => router.push("/reset-password")}>
+          Enter reset code
         </AuthButton>
 
         <p
@@ -136,7 +146,7 @@ export default function ForgotPasswordPage() {
           Forgot password?
         </h1>
         <p className="text-[14px]" style={{ color: "#B0C4DE" }}>
-          Enter your email and we&apos;ll send you a reset link.
+          Enter your email and we&apos;ll send you a 6-digit reset code.
         </p>
       </div>
 
@@ -159,7 +169,7 @@ export default function ForgotPasswordPage() {
         />
 
         <AuthButton type="submit" loading={isLoading} className="mt-2">
-          {isLoading ? "Sending reset link…" : "Send Reset Link"}
+          {isLoading ? "Sending reset code…" : "Send Reset Code"}
         </AuthButton>
       </form>
 

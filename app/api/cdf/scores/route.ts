@@ -1,6 +1,6 @@
 // app/api/cdf/scores/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { withAuth } from "@/middlewares/authMiddleware";
+import { withFeatureAuth } from "@/middlewares/authMiddleware";
 import {
   getCdfScores,
   resolveCdfError,
@@ -36,4 +36,4 @@ const getHandler = async (
   }
 };
 
-export const GET = withAuth(getHandler);
+export const GET = withFeatureAuth("cdf", getHandler);

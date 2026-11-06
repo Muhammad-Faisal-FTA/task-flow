@@ -1,6 +1,6 @@
 // app/api/cdf/settings/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { withAuth } from "@/middlewares/authMiddleware";
+import { withFeatureAuth } from "@/middlewares/authMiddleware";
 import {
   getCdfSettings,
   updateCdfSettings,
@@ -68,5 +68,5 @@ const patchHandler = async (
   }
 };
 
-export const GET   = withAuth(getHandler);
-export const PATCH = withAuth(patchHandler);
+export const GET   = withFeatureAuth("cdf", getHandler);
+export const PATCH = withFeatureAuth("cdf", patchHandler);
