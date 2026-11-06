@@ -7,9 +7,8 @@ import { z } from "zod";
 
 // ─── Validation schema ────────────────────────────────────────────────────────
 const ResetPasswordSchema = z.object({
-  token: z
-    .string()
-    .min(1, "Reset token is required"),
+  email: z.string().email("A valid email is required").toLowerCase(),
+  otp: z.string().regex(/^\d{6}$/, "OTP must contain exactly 6 digits"),
   password: z
     .string()
     .min(8, "Password must be at least 8 characters")
@@ -47,7 +46,8 @@ const handler = async (req: NextRequest): Promise<NextResponse> => {
 
     // 3. Reset password
     const result = await resetPassword(
-      parsed.data.token,
+      parsed.data.email,
+      parsed.data.otp,
       parsed.data.password
     );
 
@@ -60,28 +60,3 @@ const handler = async (req: NextRequest): Promise<NextResponse> => {
 
 // Auth rate limit — 10 requests per 15 minutes
 export const POST = withRateLimit(RATE_LIMIT_PRESETS.auth, handler);
-// ```
-
-// ---
-
-// **What this covers:**
-
-// - ✅ **Security** — `verify-email` supports both `GET` (email link click) and `POST` (programmatic) — token validated in both cases
-// - ✅ **Security** — `forgot-password` uses `RATE_LIMIT_PRESETS.forgotPassword` — strictest limit (3 req/hr) to prevent email bombing
-// - ✅ **Security** — `reset-password` enforces same password strength rules as register — consistent policy
-// - ✅ **Security** — reset token validated at both JWT level (expiry) and DB level (token match + expiry) — double protection
-// - ✅ **Performance** — Zod `safeParse` used throughout — no throwing on validation, clean error objects
-// - ✅ **Scalability** — all routes are stateless — token carries all state needed
-
-// ---
-
-// **Full API surface so far:**
-// ```
-// POST  /api/auth/register           ← rate limited (10/15min)
-// POST  /api/auth/login              ← rate limited (10/15min)
-// POST  /api/auth/refresh            ← cookie-based, no rate limit
-// POST  /api/auth/logout             ← requires valid access token
-// GET   /api/auth/verify-email       ← email link click
-// POST  /api/auth/verify-email       ← programmatic verify
-// POST  /api/auth/forgot-password    ← rate limited (3/hr)
-// POST  /api/auth/reset-password     ← rate limited (10/15min)

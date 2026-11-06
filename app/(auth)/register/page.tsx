@@ -108,7 +108,7 @@ export default function RegisterPage() {
             Check your email
           </h1>
           <p className="text-[14px]" style={{ color: "#B0C4DE" }}>
-            We sent a verification link to your email address.
+            We sent a 6-digit verification code to your email address.
           </p>
         </div>
 

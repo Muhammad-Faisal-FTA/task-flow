@@ -1,6 +1,6 @@
 // app/api/notifications/subscribe/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { withAuth }                  from "@/middlewares/authMiddleware";
+import { withFeatureAuth }            from "@/middlewares/authMiddleware";
 import {
   saveSubscription,
   removeSubscription,
@@ -95,5 +95,5 @@ const deleteHandler = async (
   }
 };
 
-export const POST   = withAuth(postHandler);
-export const DELETE = withAuth(deleteHandler);
+export const POST   = withFeatureAuth("notifications", postHandler);
+export const DELETE = withFeatureAuth("notifications", deleteHandler);

@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { withAuthAndId } from "@/middlewares/validateObjectId";
+import { withFeatureAuthAndId } from "@/middlewares/validateObjectId";
 import { isValidObjectId } from "@/middlewares/validateObjectId";
 import {
   getTaskById,
@@ -224,6 +224,6 @@ const deleteHandler = async (
 };
 
 // ─── Export with middleware ───────────────────────────────────────────────────
-export const GET    = withAuthAndId("taskId", getHandler);
-export const PATCH  = withAuthAndId("taskId", patchHandler);
-export const DELETE = withAuthAndId("taskId", deleteHandler);
+export const GET    = withFeatureAuthAndId("tasks", "taskId", getHandler);
+export const PATCH  = withFeatureAuthAndId("tasks", "taskId", patchHandler);
+export const DELETE = withFeatureAuthAndId("tasks", "taskId", deleteHandler);

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // app/api/cdf/events/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { withAuth } from "@/middlewares/authMiddleware";
+import { withFeatureAuth } from "@/middlewares/authMiddleware";
 import { withRateLimit, RATE_LIMIT_PRESETS } from "@/middlewares/rateLimit";
 import {
   getCdfEvents,
@@ -120,8 +120,8 @@ const postHandler = async (
   }
 };
 
-export const GET  = withAuth(getHandler);
+export const GET  = withFeatureAuth("cdf", getHandler);
 export const POST = withRateLimit(
   RATE_LIMIT_PRESETS.api,
-  withAuth(postHandler) as any
+  withFeatureAuth("cdf", postHandler)
 );

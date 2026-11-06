@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withAuth } from "./authMiddleware";
+import { withAuth, withFeatureAuth } from "./authMiddleware";
+import type { AdminFeature } from "@/services/accessControlService";
 import type { AccessTokenPayload } from "@/types/auth";
 
 type Context = { params: Promise<Record<string, string>> };
@@ -11,3 +12,6 @@ export function validateObjectId(key: string, handler: Handler): Handler { retur
 export function validateObjectIds(keys: string[], handler: Handler): Handler { return async (request, context, user) => { const params = await context.params; const invalid = keys.find((key) => !isValidObjectId(params[key])); return invalid ? NextResponse.json({ error: `Invalid ${invalid} format.` }, { status: 400 }) : handler(request, context, user); }; }
 export function withAuthAndId(key: string, handler: Handler) { return withAuth(validateObjectId(key, handler)); }
 export function withAuthAndIds(keys: string[], handler: Handler) { return withAuth(validateObjectIds(keys, handler)); }
+export function withFeatureAuthAndId(feature: AdminFeature, key: string, handler: Handler) {
+  return withFeatureAuth(feature, validateObjectId(key, handler));
+}

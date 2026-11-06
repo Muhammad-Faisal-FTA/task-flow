@@ -171,7 +171,7 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
   const timedTodayTasks = tasks.filter((task) => isTimedTaskOnDate(task, today));
 
   return (
-    <div className="relative flex h-full flex-col">
+    <div className="relative flex h-full min-h-0 flex-col">
       {/* ── Header ────────────────────────────────────────────────────── */}
       <HeaderBar
         title="✓ All Tasks"
@@ -285,10 +285,7 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
       )}
 
       {/* ── Main content ──────────────────────────────────────────────── */}
-      <div
-        className="flex-1 overflow-y-auto scrollbar-hide"
-        style={{ padding: "16px 16px 100px" }}
-      >
+      <div className="min-h-0 flex-1 overflow-y-auto" style={{ padding: "16px 16px 100px" }}>
         {searchOpen ? (
           <SearchResults
             query={query}

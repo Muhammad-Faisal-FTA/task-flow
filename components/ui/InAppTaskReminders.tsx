@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bell, Check, X } from "lucide-react";
+import { Bell, Check, Volume2, VolumeX, X } from "lucide-react";
 import type { Task } from "@/types";
 import { getInAppReminderKey, isInAppReminderDue } from "@/utils/inAppReminders";
 
@@ -12,7 +12,34 @@ interface InAppTaskRemindersProps {
 
 export function InAppTaskReminders({ tasks, onOpenTask }: InAppTaskRemindersProps) {
   const [reminders, setReminders] = useState<Task[]>([]);
+  const [soundEnabled, setSoundEnabled] = useState(false);
   const notifiedKeys = useRef(new Set<string>());
+  const audioContext = useRef<AudioContext | null>(null);
+  const soundReady = useRef(false);
+
+  useEffect(() => {
+    const enabled = window.localStorage.getItem("taskflow-reminder-sound") === "on";
+    soundReady.current = true;
+    setSoundEnabled(enabled);
+  }, []);
+
+  const playReminderTone = () => {
+    const AudioContextConstructor = window.AudioContext;
+    if (!AudioContextConstructor) return;
+    const context = audioContext.current ?? new AudioContextConstructor();
+    audioContext.current = context;
+    void context.resume().then(() => {
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.frequency.value = 880;
+      gain.gain.setValueAtTime(0.0001, context.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.18, context.currentTime + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.5);
+      oscillator.connect(gain).connect(context.destination);
+      oscillator.start();
+      oscillator.stop(context.currentTime + 0.5);
+    }).catch(() => undefined);
+  };
 
   useEffect(() => {
     const checkReminders = () => {
@@ -23,6 +50,7 @@ export function InAppTaskReminders({ tasks, onOpenTask }: InAppTaskRemindersProp
         const key = getInAppReminderKey(task);
         if (notifiedKeys.current.has(key)) continue;
         notifiedKeys.current.add(key);
+        if (soundEnabled) playReminderTone();
         setReminders((current) => current.some((item) => getInAppReminderKey(item) === key)
           ? current
           : [...current, task]);
@@ -39,7 +67,7 @@ export function InAppTaskReminders({ tasks, onOpenTask }: InAppTaskRemindersProp
     checkReminders();
     const interval = window.setInterval(checkReminders, 10_000);
     return () => window.clearInterval(interval);
-  }, [tasks]);
+  }, [tasks, soundEnabled]);
 
   if (reminders.length === 0) return null;
 
@@ -48,6 +76,24 @@ export function InAppTaskReminders({ tasks, onOpenTask }: InAppTaskRemindersProp
       className="pointer-events-none fixed inset-0 z-[250] flex flex-col items-center justify-center gap-2 p-4"
       aria-label="Task reminders"
     >
+      <button
+        type="button"
+        aria-pressed={soundEnabled}
+        onClick={() => {
+          const enabled = !soundEnabled;
+          setSoundEnabled(enabled);
+          window.localStorage.setItem("taskflow-reminder-sound", enabled ? "on" : "off");
+          if (enabled) {
+            soundReady.current = true;
+            playReminderTone();
+          }
+        }}
+        className="pointer-events-auto inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold shadow-card"
+        style={{ backgroundColor: "var(--color-bg-card)", color: "var(--color-text-primary)" }}
+      >
+        {soundEnabled ? <Volume2 aria-hidden="true" className="h-4 w-4" /> : <VolumeX aria-hidden="true" className="h-4 w-4" />}
+        Sound {soundEnabled ? "on" : "off"}
+      </button>
       {reminders.map((task) => {
         const key = getInAppReminderKey(task);
         return (

@@ -62,7 +62,7 @@ export async function createTask(userId: string, input: CreateTaskInput) {
     throw new Error("INVALID_REPEAT_CONFIG");
   }
   const taskType = input.taskType ?? "task";
-  const [task] = await db.insert(tasks).values({ userId, listId: input.listId, title: input.title.trim(), taskType, meetingLink: taskType === "event" ? input.meetingLink ?? null : null, location: taskType === "event" ? input.location?.trim() || null : null, durationMinutes: taskType === "event" ? input.durationMinutes ?? null : null, dueDate, dueTime: input.dueTime ?? null, startTime: input.startTime ?? input.dueTime ?? null, endTime: input.endTime ?? null, priority: input.priority ?? "C", cdfTracking: input.cdfTracking ?? true, repeat, repeatDays, repeatEndDate, links: input.links ?? [] }).returning(); return taskDto(task);
+  const [task] = await db.insert(tasks).values({ userId, listId: input.listId, title: input.title.trim(), taskType, meetingLink: taskType === "event" ? input.meetingLink ?? null : null, location: taskType === "event" ? input.location?.trim() || null : null, durationMinutes: input.durationMinutes ?? null, dueDate, dueTime: input.dueTime ?? null, startTime: input.startTime ?? input.dueTime ?? null, endTime: input.endTime ?? null, priority: input.priority ?? "C", cdfTracking: input.cdfTracking ?? false, repeat, repeatDays, repeatEndDate, links: input.links ?? [] }).returning(); return taskDto(task);
 }
 export async function updateTask(userId: string, id: string, input: UpdateTaskInput) {
   const { repeatScope, ...updateInput } = input;
@@ -94,11 +94,7 @@ export async function updateTask(userId: string, id: string, input: UpdateTaskIn
             : updateInput.location !== undefined
               ? updateInput.location?.trim() || null
               : current.location,
-          durationMinutes: updateInput.taskType === "task"
-            ? null
-            : updateInput.durationMinutes !== undefined
-              ? updateInput.durationMinutes
-              : current.durationMinutes,
+          durationMinutes: updateInput.durationMinutes ?? current.durationMinutes,
           completed,
           completedAt: completed
             ? (updateInput.completed === undefined
@@ -157,7 +153,7 @@ export async function updateTask(userId: string, id: string, input: UpdateTaskIn
   }
   const completed = updateInput.completed ?? current.completed;
   const taskType = updateInput.taskType ?? current.taskType;
-  const [task] = await db.update(tasks).set({ ...(updateInput.listId && { listId: updateInput.listId }), ...(updateInput.title !== undefined && { title: updateInput.title.trim() }), ...(updateInput.taskType !== undefined && { taskType }), ...(taskType === "task" && updateInput.taskType === "task" ? { meetingLink: null, location: null, durationMinutes: null } : {}), ...(updateInput.meetingLink !== undefined && { meetingLink: updateInput.meetingLink }), ...(updateInput.location !== undefined && { location: updateInput.location?.trim() || null }), ...(updateInput.durationMinutes !== undefined && { durationMinutes: updateInput.durationMinutes }), ...(updateInput.dueDate !== undefined && { dueDate }), ...(updateInput.dueTime !== undefined && { dueTime: updateInput.dueTime }), ...((updateInput.dueDate !== undefined || updateInput.startTime !== undefined || updateInput.dueTime !== undefined) && { reminderSentFor: null }), ...(updateInput.startTime !== undefined && { startTime: updateInput.startTime }), ...(updateInput.endTime !== undefined && { endTime: updateInput.endTime }), ...(updateInput.priority !== undefined && { priority: updateInput.priority }), ...(updateInput.cdfTracking !== undefined && { cdfTracking: updateInput.cdfTracking }), ...(updateInput.repeat !== undefined && { repeat }), repeatDays, repeatEndDate, ...(updateInput.links && { links: updateInput.links }), ...(updateInput.completed !== undefined && { completed, completedAt: completed ? new Date() : null }), updatedAt: new Date() }).where(eq(tasks.id, id)).returning(); return taskDto(task);
+  const [task] = await db.update(tasks).set({ ...(updateInput.listId && { listId: updateInput.listId }), ...(updateInput.title !== undefined && { title: updateInput.title.trim() }), ...(updateInput.taskType !== undefined && { taskType }), ...(taskType === "task" && updateInput.taskType === "task" ? { meetingLink: null, location: null } : {}), ...(updateInput.meetingLink !== undefined && { meetingLink: updateInput.meetingLink }), ...(updateInput.location !== undefined && { location: updateInput.location?.trim() || null }), ...(updateInput.durationMinutes !== undefined && { durationMinutes: updateInput.durationMinutes }), ...(updateInput.dueDate !== undefined && { dueDate }), ...(updateInput.dueTime !== undefined && { dueTime: updateInput.dueTime }), ...((updateInput.dueDate !== undefined || updateInput.startTime !== undefined || updateInput.dueTime !== undefined) && { reminderSentFor: null }), ...(updateInput.startTime !== undefined && { startTime: updateInput.startTime }), ...(updateInput.endTime !== undefined && { endTime: updateInput.endTime }), ...(updateInput.priority !== undefined && { priority: updateInput.priority }), ...(updateInput.cdfTracking !== undefined && { cdfTracking: updateInput.cdfTracking }), ...(updateInput.repeat !== undefined && { repeat }), repeatDays, repeatEndDate, ...(updateInput.links && { links: updateInput.links }), ...(updateInput.completed !== undefined && { completed, completedAt: completed ? new Date() : null }), updatedAt: new Date() }).where(eq(tasks.id, id)).returning(); return taskDto(task);
 }
 async function resetDueRepeatingTask(task: Task): Promise<Task> {
   if (!task.completed || task.repeat === "none" || !task.dueDate) return task;

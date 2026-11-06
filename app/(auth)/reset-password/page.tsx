@@ -1,230 +1,95 @@
-// app/(auth)/reset-password/page.tsx
 "use client";
 
-import { useState, Suspense } from "react";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Lock, CheckCircle2 } from "lucide-react";
+import { Lock, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthInput } from "@/components/auth/AuthInput";
 import { AuthButton } from "@/components/auth/AuthButton";
 import { AuthAlert } from "@/components/auth/AuthAlert";
 import { PasswordStrength } from "@/components/auth/PasswordStrength";
 
-// ─── Schema ───────────────────────────────────────────────────────────────────
-const ResetPasswordSchema = z
-  .object({
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Z]/, "Must contain at least one uppercase letter")
-      .regex(/[0-9]/, "Must contain at least one number"),
-    confirmPassword: z.string().min(1, "Please confirm your password"),
-  })
-  .refine((d) => d.password === d.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
-
-type ResetPasswordFormData = z.infer<typeof ResetPasswordSchema>;
-
-// ─── Inner Component (uses useSearchParams) ──────────────────────────────────
-function ResetPasswordContent() {
-  const searchParams = useSearchParams();
+function ResetPasswordForm() {
   const { resetPassword } = useAuth();
-  const token = searchParams?.get("token");
+  const [email, setEmail] = useState("");
+  const [emailLoaded, setEmailLoaded] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors },
-  } = useForm<ResetPasswordFormData>({
-    resolver: zodResolver(ResetPasswordSchema),
-  });
-
-  const passwordValue = watch("password", "");
-
-  // ── No token guard ─────────────────────────────────────────────────────────
-  if (!token) {
-    return (
-      <>
-        <div className="flex flex-col items-center text-center mb-6">
-          <div
-            className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-            style={{ backgroundColor: "rgba(229,57,53,0.15)" }}
-          >
-            <Lock className="w-8 h-8" style={{ color: "#E53935" }} />
-          </div>
-          <h1 className="text-[22px] font-bold text-white mb-2">
-            Invalid Link
-          </h1>
-          <p className="text-[14px]" style={{ color: "#B0C4DE" }}>
-            This reset link is missing or invalid.
-          </p>
-        </div>
-
-        <AuthAlert
-          variant="error"
-          message="Please request a new password reset link."
-          className="mb-6"
-        />
-
-        <Link href="/forgot-password">
-          <AuthButton type="button">Request New Link</AuthButton>
-        </Link>
-      </>
-    );
-  }
-
-  // ── Success state ──────────────────────────────────────────────────────────
-  if (isSuccess) {
-    return (
-      <>
-        <div className="flex flex-col items-center text-center mb-6">
-          <div
-            className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-            style={{ backgroundColor: "rgba(67,160,71,0.15)" }}
-          >
-            <CheckCircle2 className="w-8 h-8" style={{ color: "#43A047" }} />
-          </div>
-          <h1 className="text-[22px] font-bold text-white mb-2">
-            Password Reset!
-          </h1>
-          <p className="text-[14px]" style={{ color: "#B0C4DE" }}>
-            Your password has been updated successfully.
-          </p>
-        </div>
-
-        <AuthAlert
-          variant="success"
-          message="You can now sign in with your new password."
-          className="mb-6"
-        />
-
-        <Link href="/login">
-          <AuthButton type="button">Continue to Sign In</AuthButton>
-        </Link>
-      </>
-    );
-  }
-
-  // ── Form ───────────────────────────────────────────────────────────────────
-  const onSubmit = async (data: ResetPasswordFormData) => {
-    setServerError(null);
-    setIsLoading(true);
-
+  useEffect(() => {
     try {
-      await resetPassword(token, data.password, data.confirmPassword);
-      setIsSuccess(true);
-    } catch (err) {
-      const error = err as Error & { status?: number };
-
-      if (error.status === 410) {
-        setServerError(
-          "This reset link has expired. Please request a new one.",
-        );
-      } else if (error.status === 400) {
-        setServerError("This reset link is invalid or has already been used.");
-      } else {
-        setServerError(error.message ?? "Reset failed. Please try again.");
-      }
+      setEmail(window.sessionStorage.getItem("taskflow:password-reset-email") ?? "");
+    } catch {
+      setEmail("");
     } finally {
-      setIsLoading(false);
+      setEmailLoaded(true);
     }
-  };
+  }, []);
 
-  return (
-    <>
-      {/* Header */}
-      <div className="mb-7">
-        <h1 className="text-[22px] font-bold text-white mb-1.5">
-          Reset password
-        </h1>
-        <p className="text-[14px]" style={{ color: "#B0C4DE" }}>
-          Choose a strong new password for your account.
-        </p>
-      </div>
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    if (!email) return setError("Request a reset code first.");
+    if (!/^\d{6}$/.test(otp)) return setError("Enter the 6-digit code from your email.");
+    if (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+      return setError("Use at least 8 characters, including an uppercase letter and a number.");
+    }
+    if (password !== confirmPassword) return setError("Passwords do not match.");
 
-      {/* Server error */}
-      {serverError && (
-        <>
-          <AuthAlert variant="error" message={serverError} className="mb-5" />
-          {/* If expired/invalid — offer to get new link */}
-          <Link href="/forgot-password">
-            <AuthButton variant="ghost" className="mb-5" type="button">
-              Request New Reset Link
-            </AuthButton>
-          </Link>
-        </>
-      )}
-
-      {/* Form */}
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-        <div>
-          <AuthInput
-            label="New Password"
-            type="password"
-            placeholder="Create a strong password"
-            icon={<Lock className="w-4 h-4" />}
-            error={errors.password?.message}
-            autoComplete="new-password"
-            autoFocus
-            {...register("password")}
-          />
-          <PasswordStrength password={passwordValue} />
-        </div>
-
-        <AuthInput
-          label="Confirm New Password"
-          type="password"
-          placeholder="Repeat your new password"
-          icon={<Lock className="w-4 h-4" />}
-          error={errors.confirmPassword?.message}
-          autoComplete="new-password"
-          {...register("confirmPassword")}
-        />
-
-        <AuthButton type="submit" loading={isLoading} className="mt-2">
-          {isLoading ? "Resetting password…" : "Reset Password"}
-        </AuthButton>
-      </form>
-
-      {/* Back to login */}
-      <p className="text-center text-[13px] mt-5" style={{ color: "#B0C4DE" }}>
-        Remembered it?{" "}
-        <Link
-          href="/login"
-          className="font-semibold"
-          style={{ color: "#29B6F6" }}
-        >
-          Sign in
-        </Link>
-      </p>
-    </>
-  );
-}
-
-// ─── Page (with Suspense boundary) ───────────────────────────────────────────
-export default function ResetPasswordPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex items-center justify-center py-12">
-          <div className="text-[14px]" style={{ color: "#B0C4DE" }}>
-            Loading...
-          </div>
-        </div>
+    setLoading(true);
+    try {
+      await resetPassword(email, otp, password, confirmPassword);
+      try {
+        window.sessionStorage.removeItem("taskflow:password-reset-email");
+      } catch {
+        // Password reset still succeeds when browser storage is unavailable.
       }
-    >
-      <ResetPasswordContent />
-    </Suspense>
-  );
+      setSuccess(true);
+    } catch (caught) {
+      const failure = caught as Error;
+      setError(failure.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (success) return <div className="space-y-5 text-center">
+    <ShieldCheck className="mx-auto h-14 w-14 text-green-500" />
+    <h1 className="text-[22px] font-bold text-white">Password updated</h1>
+    <AuthAlert variant="success" message="You can now sign in with your new password." />
+    <Link href="/login"><AuthButton type="button">Continue to Sign In</AuthButton></Link>
+  </div>;
+
+  if (!emailLoaded) return <p className="text-center text-sm text-slate-300">Loading reset request…</p>;
+
+  if (!email) return <div className="space-y-5 text-center">
+    <h1 className="text-[22px] font-bold text-white">Reset password</h1>
+    <AuthAlert variant="info" message="Start by requesting a reset code. Your email will be carried to this step automatically." />
+    <Link href="/forgot-password"><AuthButton type="button">Request reset code</AuthButton></Link>
+  </div>;
+
+  return <>
+    <div className="mb-6">
+      <h1 className="mb-2 text-[22px] font-bold text-white">Reset password</h1>
+      <p className="text-[14px]" style={{ color: "#B0C4DE" }}>Enter the 6-digit code sent to your email and choose a new password. The code expires in 10 minutes.</p>
+    </div>
+    {error && <AuthAlert variant="error" message={error} className="mb-5" />}
+    <form onSubmit={submit} className="space-y-4">
+      <AuthInput label="Reset code" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} required />
+      <div>
+        <AuthInput label="New password" type="password" icon={<Lock className="h-4 w-4" />} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+        <PasswordStrength password={password} />
+      </div>
+      <AuthInput label="Confirm new password" type="password" icon={<Lock className="h-4 w-4" />} autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required />
+      <AuthButton type="submit" loading={loading}>{loading ? "Updating password…" : "Reset Password"}</AuthButton>
+    </form>
+    <p className="mt-5 text-center text-[13px]" style={{ color: "#B0C4DE" }}>Need a code? <Link href="/forgot-password" className="font-semibold" style={{ color: "#29B6F6" }}>Request one</Link></p>
+  </>;
 }
+
+export default ResetPasswordForm;

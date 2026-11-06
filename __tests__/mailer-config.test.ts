@@ -5,7 +5,6 @@ describe("mailer config", () => {
   it("returns null when required SMTP variables are missing", () => {
     expect(
       resolveMailerConfig({
-        APP_URL: "http://localhost:3000",
       })
     ).toBeNull();
   });
@@ -17,7 +16,6 @@ describe("mailer config", () => {
       SMTP_USER: "test@example.com",
       SMTP_PASS: "secretpass",
       SMTP_FROM: "noreply@example.com",
-      APP_URL: "http://localhost:3000",
     });
 
     expect(config).toEqual(

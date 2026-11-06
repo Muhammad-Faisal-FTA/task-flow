@@ -9,13 +9,27 @@ const timestamps = () => ({
 export const repeatEnum = pgEnum("repeat_frequency", ["none", "daily", "weekdays", "weekly", "monthly", "yearly", "custom"]);
 export const taskTypeEnum = pgEnum("task_type", ["task", "event"]);
 export const taskPriorityEnum = pgEnum("task_priority", ["A", "B", "C", "D"]);
+export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
+export const adminFeatures = ["tasks", "lists", "cdf", "notifications"] as const;
+export const thirdPartyServices = ["email", "push"] as const;
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(), name: varchar("name", { length: 50 }).notNull(),
   email: varchar("email", { length: 320 }).notNull(), password: text("password").notNull(),
-  isVerified: boolean("is_verified").default(false).notNull(), verificationOtpHash: text("verification_otp_hash"),
+  role: userRoleEnum("role").default("user").notNull(), isVerified: boolean("is_verified").default(false).notNull(), verificationOtpHash: text("verification_otp_hash"),
   verificationOtpExpiry: timestamp("verification_otp_expiry", { withTimezone: true }),
-  resetPasswordToken: text("reset_password_token"), resetPasswordExpiry: timestamp("reset_password_expiry", { withTimezone: true }), ...timestamps(),
-}, (t) => [uniqueIndex("users_email_unique").on(sql`lower(${t.email})`), index("users_reset_token_idx").on(t.resetPasswordToken)]);
+  resetPasswordOtpHash: text("reset_password_otp_hash"), resetPasswordOtpExpiry: timestamp("reset_password_otp_expiry", { withTimezone: true }), ...timestamps(),
+}, (t) => [uniqueIndex("users_email_unique").on(sql`lower(${t.email})`)]);
+export const userPermissions = pgTable("user_permissions", {
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  feature: varchar("feature", { length: 40 }).notNull(),
+  enabled: boolean("enabled").default(true).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [uniqueIndex("user_permissions_user_feature_unique").on(t.userId, t.feature)]);
+export const platformSettings = pgTable("platform_settings", {
+  service: varchar("service", { length: 40 }).primaryKey(),
+  enabled: boolean("enabled").default(true).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
 export const taskLists = pgTable("task_lists", {
   id: uuid("id").defaultRandom().primaryKey(), userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   name: varchar("name", { length: 50 }).notNull(), color: varchar("color", { length: 7 }).default("#1E8BC3").notNull(),
@@ -29,7 +43,7 @@ export const tasks = pgTable("tasks", {
   dueTime: varchar("due_time", { length: 5 }), startTime: varchar("start_time", { length: 5 }), endTime: varchar("end_time", { length: 5 }), repeat: repeatEnum("repeat").default("none").notNull(),
   repeatDays: integer("repeat_days").array().default(sql`'{}'::integer[]`).notNull(), repeatEndDate: date("repeat_end_date", { mode: "date" }),
   reminderSentFor: date("reminder_sent_for", { mode: "date" }),
-  priority: taskPriorityEnum("priority").default("C").notNull(), cdfTracking: boolean("cdf_tracking").default(true).notNull(), deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  priority: taskPriorityEnum("priority").default("C").notNull(), cdfTracking: boolean("cdf_tracking").default(false).notNull(), deletedAt: timestamp("deleted_at", { withTimezone: true }),
   links: jsonb("links").$type<TaskLink[]>().default([]).notNull(), ...timestamps(),
 }, (t) => [index("tasks_user_due_idx").on(t.userId, t.dueDate), index("tasks_user_list_due_idx").on(t.userId, t.listId, t.dueDate), check("tasks_due_time_check", sql`${t.dueTime} is null or ${t.dueTime} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'`)]);
 export const pushSubscriptions = pgTable("push_subscriptions", {

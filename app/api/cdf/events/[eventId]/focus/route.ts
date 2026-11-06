@@ -75,7 +75,7 @@
 
 // app/api/cdf/events/[eventId]/focus/route.ts
 import { NextRequest, NextResponse }  from "next/server";
-import { withAuthAndId }              from "@/middlewares/validateObjectId";
+import { withFeatureAuthAndId }       from "@/middlewares/validateObjectId";
 import {
   submitFocusScore,
   isCdfEnabled,
@@ -156,4 +156,4 @@ const handler = async (
   }
 };
 
-export const PATCH = withAuthAndId("eventId", handler);
+export const PATCH = withFeatureAuthAndId("cdf", "eventId", handler);

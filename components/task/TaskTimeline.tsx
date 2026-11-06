@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent, KeyboardEvent, MouseEvent } from "react";
 import { X } from "lucide-react";
-import { TaskCheckbox } from "@/components/task/TaskCheckbox";
+import { TaskTimelineGrid } from "@/components/task/TaskTimelineGrid";
 import type { TaskPriority } from "@/types/task";
 import type { Task, TaskList } from "@/types";
+import { positionTimelineTasks } from "@/utils/positionTimelineTasks";
 
 const DAY_START = 0;
-const DAY_END = 24 * 60;
 const HOUR_HEIGHT = 64;
 
 interface TaskTimelineProps {
@@ -29,25 +29,6 @@ interface TaskTimelineProps {
   }) => Promise<boolean>;
 }
 
-function toMinutes(value: string | null | undefined, fallback: number) {
-  if (!value) return fallback;
-  const [hours, minutes] = value.split(":").map(Number);
-  return Number.isFinite(hours) && Number.isFinite(minutes)
-    ? hours * 60 + minutes
-    : fallback;
-}
-
-function formatHour(hour: number) {
-  const period = hour >= 12 ? "PM" : "AM";
-  return `${hour % 12 || 12} ${period}`;
-}
-
-function formatTime(value: string) {
-  const [hour, minute] = value.split(":").map(Number);
-  const period = hour >= 12 ? "PM" : "AM";
-  return `${hour % 12 || 12}:${minute.toString().padStart(2, "0")} ${period}`;
-}
-
 export function TaskTimeline({
   tasks,
   onTaskClick,
@@ -62,60 +43,37 @@ export function TaskTimeline({
   const [title, setTitle] = useState("");
   const [listId, setListId] = useState("");
   const [priority, setPriority] = useState<TaskPriority>("C");
-  const [cdfTracking, setCdfTracking] = useState(true);
+  const [cdfTracking, setCdfTracking] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const timedTasks = tasks
-    .filter((task) => task.dueTime)
-    .map((task) => {
-      const start = toMinutes(task.startTime ?? task.dueTime, DAY_START);
-      const end = Math.max(
-        toMinutes(task.endTime, start + 60),
-        start + 30,
-      );
-      return { task, start, end };
-    })
-    .filter(({ start }) => start < DAY_END)
-    .sort((a, b) => a.start - b.start);
-
-  const overlapGroups: { end: number; items: typeof timedTasks }[] = [];
-  for (const item of timedTasks) {
-    const group = overlapGroups[overlapGroups.length - 1];
-    if (!group || item.start >= group.end) {
-      overlapGroups.push({ end: item.end, items: [item] });
-    } else {
-      group.items.push(item);
-      group.end = Math.max(group.end, item.end);
-    }
-  }
-  const positioned = overlapGroups.flatMap(({ items }) => {
-    const lanes: { end: number }[] = [];
-    const assigned = items.map((item) => {
-      let lane = lanes.findIndex((entry) => entry.end <= item.start);
-      if (lane === -1) {
-        lane = lanes.length;
-        lanes.push({ end: item.end });
-      } else {
-        lanes[lane].end = item.end;
-      }
-      return { ...item, lane };
-    });
-    const laneCount = Math.max(1, lanes.length);
-    return assigned.map((item) => ({ ...item, laneCount }));
-  });
-  const height = (DAY_END - DAY_START) * (HOUR_HEIGHT / 60);
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const update = () => setNow(new Date());
+    const interval = window.setInterval(update, 15_000);
+    window.addEventListener("focus", update);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", update);
+    };
+  }, []);
+  const isToday = date === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const visibleStart = DAY_START;
+  const visibleEnd = 24;
+  const positioned = positionTimelineTasks(tasks);
+  const height = (visibleEnd - visibleStart) * HOUR_HEIGHT;
+  const currentMinute = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
   const displayDate = new Date(`${date}T00:00:00`);
 
   const beginQuickAdd = (time: string) => {
     setQuickTime(time);
     setTitle("");
     setPriority("C");
-    setCdfTracking(true);
+    setCdfTracking(false);
     setListId(selectedListId ?? lists.find((list) => list.isDefault)?.id ?? lists[0]?.id ?? "");
   };
 
   const openQuickAdd = (event: MouseEvent<HTMLDivElement>) => {
     const bounds = event.currentTarget.getBoundingClientRect();
-    const minute = Math.max(0, Math.min(DAY_END - 15, ((event.clientY - bounds.top) / HOUR_HEIGHT) * 60));
+    const minute = Math.max(visibleStart * 60, Math.min(visibleEnd * 60 - 15, visibleStart * 60 + ((event.clientY - bounds.top) / HOUR_HEIGHT) * 60));
     const snappedMinute = Math.floor(minute / 15) * 15;
     const hour = Math.floor(snappedMinute / 60);
     const minutePart = snappedMinute % 60;
@@ -143,7 +101,7 @@ export function TaskTimeline({
 
   return (
     <section
-      className="mb-5 w-full overflow-hidden rounded-card"
+      className="mb-5 w-full rounded-card"
       style={{ border: "1px solid var(--color-border-default)" }}
       aria-label="Timed tasks"
     >
@@ -181,112 +139,30 @@ export function TaskTimeline({
           </span>
         </div>
         <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-hint)" }}>
-          {timedTasks.length} timed
+          {positioned.length} timed
         </span>
       </div>
 
-      <div className="flex" style={{ backgroundColor: "var(--color-bg-app)" }}>
-        <div className="w-12 flex-shrink-0 sm:w-14" style={{ height }}>
-          {Array.from({ length: (DAY_END - DAY_START) / 60 }, (_, index) => (
-            <div
-              key={index}
-              className="flex items-start justify-end pr-2"
-              style={{ height: HOUR_HEIGHT, color: "var(--color-text-hint)", fontSize: "var(--text-xs)" }}
-            >
-              {formatHour(DAY_START / 60 + index)}
-            </div>
-          ))}
-        </div>
-
-        <div
-          className="relative min-w-0 flex-1"
-          style={{ height, padding: "0 4px" }}
-          onClick={openQuickAdd}
-          role="button"
-          tabIndex={0}
-          aria-label="Click a time to add a task"
-          onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              beginQuickAdd("09:00");
-            }
-          }}
-        >
-          <span
-            className="pointer-events-none absolute left-2 top-2 z-[1] rounded px-1.5 py-1"
-            style={{ backgroundColor: "var(--color-bg-card)", color: "var(--color-text-hint)", fontSize: "var(--text-xs)" }}
-          >
-            Click a time to add a task
-          </span>
-          {Array.from({ length: (DAY_END - DAY_START) / 60 + 1 }, (_, index) => (
-            <div
-              key={index}
-              className="absolute inset-x-0 border-t"
-              style={{
-                top: index * HOUR_HEIGHT,
-                borderColor: "var(--color-border-default)",
-              }}
-            />
-          ))}
-
-          {positioned.map(({ task, start, end, lane, laneCount }) => {
-            const top = Math.max(0, start - DAY_START) * (HOUR_HEIGHT / 60);
-            const blockHeight = Math.max(30, end - start) * (HOUR_HEIGHT / 60);
-            const gap = 4;
-            const width = `calc(${100 / laneCount}% - ${gap}px)`;
-            const left = `calc(${(lane * 100) / laneCount}% + ${gap / 2}px)`;
-
-            return (
-              <div
-                key={task.id}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onTaskClick(task);
-                }}
-                className="absolute flex gap-2 overflow-hidden rounded-[8px] px-2 py-1 text-left shadow-card transition-transform active:scale-[0.98]"
-                style={{
-                  top,
-                  height: blockHeight,
-                  left,
-                  width,
-                  zIndex: 2,
-                  backgroundColor: task.completed
-                    ? "color-mix(in srgb, var(--color-primary) 35%, var(--color-bg-card))"
-                    : "var(--color-primary)",
-                  color: "var(--color-text-primary)",
-                  opacity: task.completed ? 0.72 : 1,
-                }}
-              >
-                <TaskCheckbox
-                  taskId={task.id}
-                  completed={task.completed}
-                  onToggle={onToggle}
-                  isToggling={isToggling(task.id)}
-                />
-                <div className="min-w-0 flex-1">
-                  <span
-                    className="block truncate font-semibold"
-                    style={{
-                      fontSize: "var(--text-sm)",
-                      textDecoration: task.completed ? "line-through" : "none",
-                      opacity: task.completed ? 0.6 : 1,
-                    }}
-                  >
-                    {task.title}
-                  </span>
-                  <span className="block truncate" style={{ fontSize: "var(--text-xs)", opacity: 0.8 }}>
-                    {formatTime(task.startTime ?? task.dueTime!)}
-                    {task.endTime ? ` - ${formatTime(task.endTime)}` : " - 1 hr"}
-                  </span>
-                  <span className="mt-1 inline-block rounded px-1 font-semibold" style={{ fontSize: "10px", backgroundColor: "rgba(255,255,255,0.2)" }}>
-                    {task.priority ?? "C"}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <TaskTimelineGrid
+        key={`${date}-${isToday}`}
+        tasks={positioned}
+        startHour={visibleStart}
+        endHour={visibleEnd}
+        height={height}
+        initialScrollHour={isToday ? now.getHours() : 0}
+        currentMinute={currentMinute}
+        showCurrentTime={isToday}
+        onClick={openQuickAdd}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            beginQuickAdd("09:00");
+          }
+        }}
+        onTaskClick={onTaskClick}
+        onToggle={onToggle}
+        isToggling={isToggling}
+      />
 
       {quickTime && (
         <div

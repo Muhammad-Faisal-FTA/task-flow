@@ -408,10 +408,9 @@ Create `.env`:
 # Database
 MONGODB_URI=mongodb+srv://...
 
-# JWT — generate 3 separate secrets
+# JWT secrets (2 required)
 JWT_ACCESS_SECRET=
 JWT_REFRESH_SECRET=
-JWT_EMAIL_SECRET=
 
 # Email
 SMTP_HOST=smtp.gmail.com
@@ -421,7 +420,6 @@ SMTP_PASS=your-app-password
 SMTP_FROM=noreply@taskflow.com
 
 # App
-APP_URL=http://localhost:3000
 NODE_ENV=development
 DISABLE_PWA=true
 

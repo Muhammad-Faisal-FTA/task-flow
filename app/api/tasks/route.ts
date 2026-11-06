@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { withAuth } from "@/middlewares/authMiddleware";
+import { withFeatureAuth } from "@/middlewares/authMiddleware";
 import { withRateLimit, RATE_LIMIT_PRESETS } from "@/middlewares/rateLimit";
 import { isValidObjectId } from "@/middlewares/validateObjectId";
 import {
@@ -187,8 +187,8 @@ const postHandler = async (
 };
 
 // ─── Export with middleware ───────────────────────────────────────────────────
-export const GET  = withAuth(getHandler);
+export const GET  = withFeatureAuth("tasks", getHandler);
 
 // Create the rate-limited and authenticated POST handler
-const authenticatedPostHandler = withAuth(postHandler);
+const authenticatedPostHandler = withFeatureAuth("tasks", postHandler);
 export const POST = withRateLimit(RATE_LIMIT_PRESETS.api, authenticatedPostHandler);

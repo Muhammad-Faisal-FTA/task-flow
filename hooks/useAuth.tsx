@@ -32,7 +32,7 @@ interface AuthActions {
   register: (name: string, email: string, password: string, confirmPassword: string) => Promise<void>;
   logout: () => Promise<void>;
   forgotPassword: (email: string) => Promise<{ message: string }>;
-  resetPassword: (token: string, password: string, confirmPassword: string) => Promise<{ message: string }>;
+  resetPassword: (email: string, otp: string, password: string, confirmPassword: string) => Promise<{ message: string }>;
   verifyEmail: (email: string, otp: string) => Promise<{ message: string }>;
   getAccessToken: () => Promise<string | null>;
 }
@@ -334,13 +334,14 @@ function useAuthState(): UseAuthReturn {
 
   // ── Reset password ─────────────────────────────────────────────────────────
   const resetPassword = useCallback(async (
-    token: string,
+    email: string,
+    otp: string,
     password: string,
     confirmPassword: string
   ): Promise<{ message: string }> => {
     return authFetch("/api/auth/reset-password", {
       method: "POST",
-      body: JSON.stringify({ token, password, confirmPassword }),
+      body: JSON.stringify({ email, otp, password, confirmPassword }),
     });
   }, []);
 
