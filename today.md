@@ -1,6 +1,6 @@
-# 2026-10-31 — Admin access control and QA hardening
+﻿# 2026-10-31 â€” Admin access control and QA hardening
 
-## 2026-11-03 — Scheduled task timers, moving timeline, and sound reminders
+## 2026-11-03 â€” Scheduled task timers, moving timeline, and sound reminders
 
 ### Roadmap and approach
 
@@ -11,10 +11,10 @@
 
 ### What changed and why
 
-- `components/task/TaskDurationField.tsx` adds a 1–1440 minute duration control for ordinary tasks. Event duration continues to use the existing event details form.
+- `components/task/TaskDurationField.tsx` adds a 1â€“1440 minute duration control for ordinary tasks. Event duration continues to use the existing event details form.
 - `components/task/DetailScreen.tsx` now saves duration for either task type and preserves it when switching between task and event. Meeting link and location remain event-only.
 - `services/taskService.ts` persists task duration on create and update, including the current-occurrence branch for repeating tasks. No migration is needed because `duration_minutes` already exists.
-- `utils/taskTimer.ts` derives a timer's start, elapsed time, remaining time, and completion from the scheduled local date/time and duration. Example: a task scheduled for 09:00 with `durationMinutes: 25` shows 25:00 at 09:00, 10:00 at 09:15, and “Timer complete” from 09:25 onward.
+- `utils/taskTimer.ts` derives a timer's start, elapsed time, remaining time, and completion from the scheduled local date/time and duration. Example: a task scheduled for 09:00 with `durationMinutes: 25` shows 25:00 at 09:00, 10:00 at 09:15, and â€œTimer completeâ€ from 09:25 onward.
 - `components/task/TaskTimerLabel.tsx` refreshes each second and recalculates from the device clock. `components/task/TaskTimelineGrid.tsx` presents it inside each active timed task.
 - `utils/positionTimelineTasks.ts` owns time conversion and overlap lane assignment, keeping schedule calculation separate from JSX rendering.
 - `components/task/TaskTimeline.tsx` shows a 12-hour window for today, starting up to three hours before the current local hour; it refreshes on a minute tick and when the tab regains focus. Other dates remain a full-day view. Quick add maps clicks to the visible local-time window.
@@ -32,7 +32,7 @@ const timer = getTaskTimerState(task, new Date());
 <TaskTimerLabel task={task} />
 ```
 
-The data path is `DetailScreen → TaskDurationField → saveTask/API → taskService → duration_minutes`. The display path is `TaskTimeline → positionTimelineTasks → TaskTimelineGrid → TaskTimerLabel → taskTimer`. Reminder audio stays in the existing in-app reminder component and does not require a new external audio asset or push permission.
+The data path is `DetailScreen â†’ TaskDurationField â†’ saveTask/API â†’ taskService â†’ duration_minutes`. The display path is `TaskTimeline â†’ positionTimelineTasks â†’ TaskTimelineGrid â†’ TaskTimerLabel â†’ taskTimer`. Reminder audio stays in the existing in-app reminder component and does not require a new external audio asset or push permission.
 
 ### Challenges, decisions, and audit notes
 
@@ -101,7 +101,7 @@ Keep secrets in the deployment secret manager. Service switches are operational 
 - TypeScript, ESLint, migration generation, and database migration have not yet been run. No test suite was run.
 - First-admin bootstrap, mail-service semantics, audit-log retention, and full task/list route gate rollout need explicit product/operator decisions.
 
-## Monorepo admin workspace — 2026-10-31
+## Monorepo admin workspace â€” 2026-10-31
 
 ### Roadmap and architecture
 
@@ -122,10 +122,10 @@ Keep secrets in the deployment secret manager. Service switches are operational 
 
 ```text
 work flow/                 root npm workspace + TaskFlow API/database
-├── admin/                  standalone Next.js admin UI (port 3001)
-├── app/api/admin/          admin authorization and mutation API
-├── db/                     shared PostgreSQL schema
-└── drizzle/                additive SQL migrations
+â”œâ”€â”€ admin/                  standalone Next.js admin UI (port 3001)
+â”œâ”€â”€ app/api/admin/          admin authorization and mutation API
+â”œâ”€â”€ db/                     shared PostgreSQL schema
+â””â”€â”€ drizzle/                additive SQL migrations
 ```
 
 Set `TASKFLOW_API_URL` in the admin deployment configuration to the origin hosting the root TaskFlow app. Do not put database credentials in the admin workspace. Admin sign-in uses the root `/api/auth/login` endpoint through the rewrite; management calls use the returned short-lived bearer token and the root admin API.
@@ -138,7 +138,7 @@ Set `TASKFLOW_API_URL` in the admin deployment configuration to the origin hosti
 - First-admin bootstrap remains a controlled operator action after applying migration 0008. The admin app intentionally does not create or assume its first administrator.
 - For production, deploy `admin/` and the root TaskFlow app as separate Next.js services in the same monorepo; set `TASKFLOW_API_URL` to the root service origin and keep the admin workspace's API rewrite on the server side.
 
-## Admin sign-in HTML response fix — 2026-10-31
+## Admin sign-in HTML response fix â€” 2026-10-31
 
 The sign-in screenshot showed an HTML document being parsed as JSON. The admin app had no explicit `/api` route when `TASKFLOW_API_URL` was unset or unavailable, so the request could fall through to a Next.js page/404.
 
@@ -148,7 +148,7 @@ The sign-in screenshot showed an HTML document being parsed as JSON. The admin a
 - Configure `TASKFLOW_API_URL` as the TaskFlow backend origin (for local development, the root app origin) in the admin process environment, then restart the admin server. Do not put the database URL in this setting.
 - QA: source review and `git diff --check`; runtime build/test remains unverified because local Node/npm execution is restricted.
 
-## Root environment loading fix — 2026-10-31
+## Root environment loading fix â€” 2026-10-31
 
 The user had configured `TASKFLOW_API_URL` in the repository-root `.env`, but the separate Next.js workspace is rooted at `admin/` and did not load that root file. The admin API therefore returned its missing-config 503.
 
@@ -158,7 +158,7 @@ The user had configured `TASKFLOW_API_URL` in the repository-root `.env`, but th
 - Restart the admin dev server after this config change so Next reads the root settings.
 - Do not copy database credentials into the admin app; `TASKFLOW_API_URL` is only the TaskFlow web origin.
 
-## 2026-11-03 � Replace email links with OTP verification
+## 2026-11-03 — Replace email links with OTP verification
 
 ### Roadmap and approach
 
@@ -203,7 +203,7 @@ The code path is `ForgotPasswordPage ? useAuth.forgotPassword ? forgot-password 
 - `git diff --check` passed and the migration/schema were reviewed. Tests and database migration have not been run.
 - No environment files were accessed.
 
-## 2026-11-03 � Whole-system Software Design Document
+## 2026-11-03 — Whole-system Software Design Document
 
 ### Roadmap and approach
 
@@ -227,7 +227,7 @@ The code path is `ForgotPasswordPage ? useAuth.forgotPassword ? forgot-password 
 - The filesystem path app/api/tasks/[taskId]/tasks does not match its handler's listId parameter handling and comments. The intended URL is unclear from source alone, so the SDD flags it for owner resolution rather than guessing.
 - Migrations 0008/0009 are present but their application state is not established; metadata snapshots stop at 0007. The document treats this as a deployment gate.
 - Source review also identifies incomplete task/list feature-gate wiring, an email service switch not enforced at delivery points, in-memory rate limits, fire-and-forget CDF recalculation, and partial offline mutation replay.
-- �Complete� is bounded to repository-visible implementation: inline callbacks are documented through component responsibilities, and no external provider, database state, secret value, or production deployment was inspected.
+- “Complete” is bounded to repository-visible implementation: inline callbacks are documented through component responsibilities, and no external provider, database state, secret value, or production deployment was inspected.
 
 ### Teaching notes: implementation and review patterns
 
@@ -251,7 +251,7 @@ DetailScreen -> TaskDurationField -> POST/PATCH /api/tasks -> taskService -> tas
 - No database query, migration, automated test, lint, build, or type-check was performed for this documentation task.
 - Documentation whitespace and changed-file status are checked separately; prior application edits in the working tree are preserved.
 
-## 2026-11-03 � Feature-flow and database reference
+## 2026-11-03 — Feature-flow and database reference
 
 ### Roadmap and approach
 
@@ -277,7 +277,7 @@ DetailScreen -> TaskDurationField -> POST/PATCH /api/tasks -> taskService -> tas
 - Cross-checked the table/field inventory against db/schema.ts and the current SDD without accessing environment files.
 - No application code, database, or migration was changed or run for this document task.
 
-## 2026-11-03 � Render database UML in Markdown viewers
+## 2026-11-03 — Render database UML in Markdown viewers
 
 ### Roadmap and approach
 
@@ -300,7 +300,7 @@ DetailScreen -> TaskDurationField -> POST/PATCH /api/tasks -> taskService -> tas
 - Checked the relative image link and SVG entity relationships against the schema inventory.
 - No environment files or database were accessed; no application tests were run.
 
-## 2026-11-03 � Feature-by-feature system diagrams
+## 2026-11-03 — Feature-by-feature system diagrams
 
 ### Roadmap and approach
 
@@ -326,7 +326,7 @@ DetailScreen -> TaskDurationField -> POST/PATCH /api/tasks -> taskService -> tas
 - Checked all feature image references resolve to SVG files and validated SVG XML parsing.
 - `git diff --check` reported no whitespace errors. No tests or database operations were run; no environment files were accessed.
 
-## 2026-11-03 � Replace SVGs with inline text-code system diagrams
+## 2026-11-03 — Replace SVGs with inline text-code system diagrams
 
 ### Roadmap and approach
 
@@ -349,7 +349,7 @@ DetailScreen -> TaskDurationField -> POST/PATCH /api/tasks -> taskService -> tas
 - Confirmed FEATURES.md no longer references SVGs or Mermaid blocks and all requested diagrams are inline text.
 - `git diff --check` used for whitespace validation. No tests, DB operations, or environment-file access.
 
-## 2026-11-03 � Mermaid system-flow source embedded in FEATURES.md
+## 2026-11-03 — Mermaid system-flow source embedded in FEATURES.md
 
 ### Roadmap and approach
 
@@ -370,7 +370,7 @@ DetailScreen -> TaskDurationField -> POST/PATCH /api/tasks -> taskService -> tas
 - Confirmed 13 Mermaid diagrams (12 features plus database ER) have balanced Markdown fences and FEATURES.md contains no SVG image links.
 - `git diff --check` used for whitespace validation. No tests, database operations, or environment-file access.
 
-## 2026-11-03 � Complete TaskFlow use-case flow
+## 2026-11-03 — Complete TaskFlow use-case flow
 
 ### Roadmap and approach
 
@@ -391,7 +391,7 @@ DetailScreen -> TaskDurationField -> POST/PATCH /api/tasks -> taskService -> tas
 - Reviewed the diagram paths against the per-feature descriptions and current source-derived behavior.
 - `git diff --check` used for whitespace validation; no tests, database operations, or environment-file access.
 
-## 2026-11-03 � Diagnose forgot-password request failure
+## 2026-11-03 — Diagnose forgot-password request failure
 
 ### Roadmap and approach
 
@@ -416,13 +416,13 @@ DetailScreen -> TaskDurationField -> POST/PATCH /api/tasks -> taskService -> tas
 - Reviewed route-to-service-to-mailer error mapping and migration column names from source.
 - `git diff --check` used for whitespace validation. No tests, lint, build, DB operations, or environment-file access.
 
-## 2026-11-03 � Fix Mermaid reserved node identifier
+## 2026-11-03 — Fix Mermaid reserved node identifier
 
 - The complete use-case diagram used `end` as a node ID, which Mermaid parses as a reserved terminator and rejected at that line.
 - Renamed the node to `signedOut` and also renamed the timeline node ID `click` to `timelineAction` to avoid a possible directive-name collision.
 - Searched the diagrams for other common Mermaid reserved tokens used as node IDs. `git diff --check` reports no whitespace errors. No application tests were run.
 
-## 2026-11-04 � Load database URL for Drizzle CLI
+## 2026-11-04 — Load database URL for Drizzle CLI
 
 ### Roadmap and approach
 
@@ -442,7 +442,7 @@ DetailScreen -> TaskDurationField -> POST/PATCH /api/tasks -> taskService -> tas
 - Reviewed the config, SQL migration, journal, and installed Drizzle Kit migration output behavior; did not open environment files or contact the database.
 - `git diff --check` used for whitespace validation. The migration command, tests, build, and lint were not run by the agent.
 
-## 2026-11-04 � Carry reset email into OTP form automatically
+## 2026-11-04 — Carry reset email into OTP form automatically
 
 ### Roadmap and approach
 
@@ -463,7 +463,7 @@ DetailScreen -> TaskDurationField -> POST/PATCH /api/tasks -> taskService -> tas
 - Reviewed the form-to-hook-to-API payload path and confirmed the reset email input is removed.
 - `git diff --check` used for whitespace validation. No tests, build, DB operation, or environment-file access.
 
-## 2026-11-04 — Complete and smooth the administrator console
+## 2026-11-04 â€” Complete and smooth the administrator console
 
 ### Roadmap and approach
 
@@ -537,7 +537,7 @@ The returned access token stays in React state. A later 401 triggers one refresh
 - Confirmed the main admin page is 239 lines and the newly added component files are below the 250-line project limit.
 - `git diff --check` is the whitespace check for this change; no tests, lint, or build were run, per the project instruction not to run tests unless requested.
 
-## 2026-11-04 — Full-day timeline with current-time navigation
+## 2026-11-04 â€” Full-day timeline with current-time navigation
 
 ### Roadmap and approach
 
@@ -549,7 +549,7 @@ The returned access token stays in React state. A later 401 triggers one refresh
 
 ### What changed and why
 
-- `TaskTimeline` now always passes the full 00:00–24:00 range instead of shortening the current-day range to a 12-hour window.
+- `TaskTimeline` now always passes the full 00:00â€“24:00 range instead of shortening the current-day range to a 12-hour window.
 - `TaskTimelineGrid` owns a 480-pixel maximum-height vertical scroll area. Hour labels and task blocks share the same scroll container, so manual scrolling keeps the times aligned.
 - On initial display and selected-date changes, the grid scrolls to the current local hour for today. For another date it begins at midnight. It does not reset a user's manual scroll as the clock advances.
 - For today, a primary-color line, dot, and local-time label are positioned by the current minute and update every 15 seconds. The marker is absent on other dates.
@@ -593,7 +593,7 @@ The grid uses one scroll parent around both columns. The now marker is absolutel
 - No tests, lint, or build were run, following the project instruction not to run tests unless requested.
 - Manual browser verification is still needed for touch scrolling, exact marker appearance at 00:00/23:59, and quick-add time after scrolling.
 
-## 2026-11-04 follow-up � Use the complete Home screen's normal scroll
+## 2026-11-04 follow-up — Use the complete Home screen's normal scroll
 
 ### Correction and approach
 
@@ -631,7 +631,7 @@ The root app shell uses a fixed `100dvh` layout with outer overflow hidden, so `
 - The timeline no longer creates a special internal scrollbar; the Home screen uses normal browser wheel, touch, keyboard, and scrollbar interaction.
 - `git diff --check` was run. Source review confirms no `scrollTop` or nested `overflow-y-auto` remains in the timeline. No tests, lint, or build were run.
 
-## 2026-11-04 follow-up � Keep the header and bottom navigation fixed
+## 2026-11-04 follow-up — Keep the header and bottom navigation fixed
 
 The previous follow-up made the entire Home screen, including the header and summary controls, scroll. The clarified layout keeps those controls fixed and moves only the main body.
 
@@ -641,7 +641,7 @@ The previous follow-up made the entire Home screen, including the header and sum
 - The late-day normal-flow spacer is measured against the body viewport to preserve current-hour alignment without adding a nested timeline scroller.
 - Source review and `git diff --check` completed; tests/build were not run.
 
-## 2026-11-04 � Default per-task CDF tracking to unchecked
+## 2026-11-04 — Default per-task CDF tracking to unchecked
 
 ### Approach and reason
 
@@ -651,7 +651,7 @@ I traced all task creation paths from UI defaults through optimistic/offline sta
 
 ### Changes made
 
-- Timeline Quick Add initializes and resets its �Track this task in CDF� checkbox to false.
+- Timeline Quick Add initializes and resets its “Track this task in CDF” checkbox to false.
 - Task Detail creation defaults a new task's CDF field to false. Existing task records continue to load their saved true/false value.
 - Floating Quick Add's local optimistic task uses false; its API request can omit the field because the service now defaults missing values to false.
 - The generic API client and local app state use false when constructing new tasks or adapting missing CDF values.
@@ -692,3 +692,91 @@ Updates do not use this default: `taskService.updateTask` writes `cdfTracking` o
 
 - Confirmed no remaining `cdfTracking: true`, `cdfTracking ?? true`, or `cdf_tracking DEFAULT true` defaults in the identified task creation/edit paths.
 - `git diff --check` was run. Tests, build, database access, and migration execution were not performed.
+
+## 2026-11-06 — Malware and unwanted-code audit
+
+### What the audit changes and why
+
+This entry records a read-only source audit. No application code, suspicious artifact, dependency, process, or environment file was changed. The purpose is to preserve evidence and obtain explicit approval before remediation.
+
+### Confirmed critical findings
+
+1. `postcss.config.mjs:10` contains Base64-obfuscated JavaScript appended after the legitimate PostCSS export. Static decoding shows network discovery through Ethereum services, XOR-decoded payload retrieval, `eval`, and a detached `node -e` child process. Because PostCSS configuration loads during normal development/build activity, this is an executable malware loader.
+2. `public/fonts/fa-solid-700.otf:1` is a second copy of the same loader family disguised as a font. It is text, not a valid OpenType font. It is a malicious repository artifact and potential reinfection source.
+
+Evidence hashes (SHA-256):
+
+- `postcss.config.mjs`: `70709145EB87F1DA8A5EB26EDC9B491F79E28CA7B43C4DB2EF184D9D9D027F14`
+- `public/fonts/fa-solid-700.otf`: `7E748BC2FBDC47001C50077E8C2D400473C43B5C613F28E51CD04E708D944026`
+
+Git history attributes both malicious additions to commit `45d7f88` (`feat: notification set up.`). Current head `d23961e` is titled `remove male code.`, but both artifacts remain, so that remediation was incomplete.
+
+### Unwanted and maintainability findings
+
+- `package.json` defines `generate-icons` twice. JSON parsers keep only the last value, making the first declaration dead and misleading.
+- Root `dev` and `build` scripts execute `node api.js`, but no tracked `api.js` exists. These scripts should fail unless an untracked file supplies it; intent must be clarified before changing them.
+- Twenty-one TypeScript/TSX files exceed the 250-line policy. The largest include `components/ui/DatePicker.tsx` (1002), `app/settings/page.tsx` (989), `components/task/DetailScreen.tsx` (819), and `components/cdf/CdfScoreCard.tsx` (779). These are refactoring candidates, not malware evidence.
+- The two `public/fallback-*.js` files are identical, benign PWA fallback bundles. One may be stale, but removal requires checking which filename the current service worker references.
+- No additional loader execution markers were found outside the two confirmed artifacts. No plaintext private keys or live-looking cloud/API tokens were found in scanned non-environment files.
+
+### Approach adopted and why
+
+The audit combined repository inventory, targeted execution/network/obfuscation searches, manual static decoding, Git provenance checks, secret-pattern scanning, hashes for evidence integrity, and line-count checks. Static analysis was chosen because executing a suspected loader could contact command-and-control infrastructure or start a persistent process.
+
+Example: legitimate configuration should end at `export default config;`. An encoded string followed by `atob(...)` and `eval(...)` turns hidden data into executable code. A safe architecture never evaluates downloaded text; configuration remains declarative and remote data is schema-validated before use.
+
+### Challenges and audit limits
+
+- Environment files and environment data were intentionally not accessed.
+- The second payload used a trusted-looking `.otf` extension, so extension-only inspection would miss it.
+- Dependency auditing could not run because `npm`/`npm.cmd` was unavailable. Dependency risk is unknown, not clean.
+- Static source inspection cannot prove whether the loader executed or whether host persistence exists outside the repository. Host/process/network forensics require separately authorized system scope.
+- `today.md` contained legacy non-UTF-8 bytes; it was mechanically converted to UTF-8 so this required entry could be patched reliably.
+
+### Implementation and component references
+
+- `postcss.config.mjs`: build-time execution point and confirmed loader.
+- `public/fonts/fa-solid-700.otf`: disguised malicious artifact.
+- `package.json`: duplicate key and missing `api.js` reference.
+- `public/fallback-INwFhOzkvm3GbH2CSTvpP.js` and `public/fallback-T8KEXFcjJRNBDsVIarI_q.js`: benign generated duplicates requiring reference validation.
+- Commit `45d7f88`: introduction point for both confirmed artifacts.
+- Commit `d23961e`: incomplete prior remediation visible at current head.
+
+Recommended remediation project: quarantine/remove both confirmed artifacts, restore a minimal clean PostCSS config and a verified Font Awesome font from a trusted source, inspect every file changed in `45d7f88`, rotate secrets used on any machine that executed development/build commands, perform host forensics, reinstall dependencies from a trusted lockfile, then run tests/build and a second indicator scan. These actions are intentionally pending explicit approval.
+
+## 2026-11-06 — Malware remediation
+
+### What changed and why
+
+- Removed the malicious `public/fonts/fa-solid-700.otf`. Repository-wide reference checks found no consumer, so replacing it would add an unnecessary artifact.
+- Rebuilt `postcss.config.mjs` as an eight-line declarative Tailwind/PostCSS configuration. The unused CommonJS bridge and entire executable loader were removed.
+- Removed `node api.js &&` from the root `dev` and `build` scripts. Historical inspection confirmed `api.js` was a third copy of the loader, deleted in commit `53820c0`; retaining its execution hooks both preserved the infection chain and broke commands because the file no longer exists.
+- Removed the duplicate `generate-icons` package-script key so the manifest has one authoritative declaration.
+
+### Commit inspection and architecture findings
+
+Commit `45d7f88` changed 23 files. Targeted static inspection of every surviving changed file found loader indicators only in `postcss.config.mjs` and the fake font. Historical inspection found the third loader in the commit's added `api.js`. The remaining notification feature, migration, tests, UI, and PWA changes did not match the loader's execution indicators.
+
+The infection chain was:
+
+```text
+npm dev/build -> package script -> api.js loader
+Next/PostCSS startup -> postcss.config.mjs loader
+Repository persistence -> fake fa-solid-700.otf copy
+```
+
+Removing only `api.js` was insufficient because Next/PostCSS could still execute the configuration payload. Remediation therefore removed every current payload and the stale command hooks together.
+
+### Verification and challenges
+
+- Scanned all non-environment repository files, excluding only this evidence document, for loader IDs, Ethereum discovery calls, payload headers, `eval`, dynamic functions, and child-process imports. No matches remain.
+- A second content-oriented scan found no Base64-to-eval loader structures or known family markers.
+- `package.json` parses successfully as JSON.
+- `postcss.config.mjs` now contains only the typed configuration, plugin declaration, and export.
+- The fake font and `api.js` are absent.
+- `git diff --check` found no application-code whitespace errors; the audit document's final newline was normalized by this update.
+- Tests, builds, and dependency auditing were not run because a usable Node/npm executable is unavailable in the session. No environment files or environment data were accessed.
+
+### Security follow-up teaching
+
+Repository cleanup stops future execution from these tracked files but does not prove a previously used workstation is clean. If any developer or CI runner executed the affected `dev` or `build` commands after commit `45d7f88`, treat that host as potentially compromised: isolate it, inspect running processes and persistence, rotate credentials from a clean device, invalidate tokens, rebuild dependencies, and review outbound network logs. Rewriting or removing the infected commit from shared history is a separate coordination decision because it changes Git history for every contributor.
