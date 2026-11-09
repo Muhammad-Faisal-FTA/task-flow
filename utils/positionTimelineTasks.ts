@@ -9,7 +9,7 @@ export interface PositionedTask {
 }
 
 export function positionTimelineTasks(tasks: Task[]): PositionedTask[] {
-  const timed = tasks.filter((task) => task.dueTime).map((task) => {
+  const timed = tasks.filter((task) => task.startTime || task.dueTime).map((task) => {
     const start = minutes(task.startTime ?? task.dueTime, 0);
     return { task, start, end: Math.max(minutes(task.endTime, start + 60), start + 30) };
   }).filter(({ start }) => start < 1440).sort((a, b) => a.start - b.start);

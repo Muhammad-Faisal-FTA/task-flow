@@ -61,8 +61,8 @@ const SECTION_DOT: Record<Task["status"], string> = {
   nodate: "var(--color-text-hint)",
 };
 
-function isTimedTaskOnDate(task: Task, date: string): boolean {
-  return Boolean(task.dueTime && task.dueDate?.slice(0, 10) === date);
+function isTaskOnDate(task: Task, date: string): boolean {
+  return task.dueDate?.slice(0, 10) === date;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -321,7 +321,7 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
               (t) =>
                 t.status === status &&
                 !t.completed &&
-                !(status === "today" && isTimedTaskOnDate(t, today)),
+                !(status === "today" && isTaskOnDate(t, today)),
             );
 
             if (sectionTasks.length === 0) return null;

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { FormEvent, KeyboardEvent, MouseEvent } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { TaskTimelineGrid } from "@/components/task/TaskTimelineGrid";
+import { TaskCheckbox } from "@/components/task/TaskCheckbox";
 import type { TaskPriority } from "@/types/task";
 import type { Task, TaskList } from "@/types";
 import { positionTimelineTasks } from "@/utils/positionTimelineTasks";
@@ -67,7 +68,9 @@ export function TaskTimeline({
   const isToday = selectedDate === today;
   const visibleStart = DAY_START;
   const visibleEnd = 24;
-  const positioned = positionTimelineTasks(tasks.filter((task) => task.dueDate?.slice(0, 10) === selectedDate));
+  const dateTasks = tasks.filter((task) => task.dueDate?.slice(0, 10) === selectedDate);
+  const allDayTasks = dateTasks.filter((task) => !task.startTime && !task.dueTime);
+  const positioned = positionTimelineTasks(dateTasks);
   const height = (visibleEnd - visibleStart) * HOUR_HEIGHT;
   const currentMinute = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
   const displayDate = new Date(`${selectedDate}T00:00:00`);
@@ -112,7 +115,7 @@ export function TaskTimeline({
     <section
       className="mb-5 w-full rounded-card"
       style={{ border: "1px solid var(--color-border-default)" }}
-      aria-label="Timed tasks"
+      aria-label="Task schedule"
     >
       <div
         className="flex items-center justify-between px-3 py-2"
@@ -170,9 +173,55 @@ export function TaskTimeline({
           </button>
         </div>
         <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-hint)" }}>
-          {positioned.length} timed
+          {positioned.length + allDayTasks.length} tasks
         </span>
       </div>
+
+      {allDayTasks.length > 0 && (
+        <div
+          className="space-y-2 px-3 py-3"
+          style={{
+            backgroundColor: "var(--color-bg-app)",
+            borderBottom: "1px solid var(--color-border-default)",
+          }}
+          aria-label="All-day tasks"
+        >
+          <p
+            className="font-semibold tracking-widest uppercase"
+            style={{ fontSize: "var(--text-xs)", color: "var(--color-text-hint)" }}
+          >
+            All day
+          </p>
+          {allDayTasks.map((task) => (
+            <div
+              key={task.id}
+              onClick={() => onTaskClick(task)}
+              className="flex cursor-pointer items-center gap-2 rounded-card px-3 py-2"
+              style={{
+                backgroundColor: "var(--color-bg-card)",
+                color: "var(--color-text-primary)",
+                opacity: task.completed ? 0.72 : 1,
+              }}
+            >
+              <TaskCheckbox
+                taskId={task.id}
+                completed={task.completed}
+                onToggle={onToggle}
+                isToggling={isToggling(task.id)}
+              />
+              <span
+                className="min-w-0 flex-1 truncate"
+                style={{
+                  fontSize: "var(--text-sm)",
+                  textDecoration: task.completed ? "line-through" : "none",
+                }}
+              >
+                {task.title}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <TaskTimelineGrid
         key={`${selectedDate}-${isToday}`}
