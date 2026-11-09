@@ -184,3 +184,21 @@ export interface TaskLink {
   name: string;    // display name e.g. "Design Doc"
   url:  string;    // full URL e.g. "https://..."
 }
+
+export interface TaskShareSnapshot {
+  title: string;
+  taskType: TaskType;
+  meetingLink: string | null;
+  location: string | null;
+  durationMinutes: number | null;
+  dueDate: string | null;
+  dueTime: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  priority: TaskPriority;
+  cdfTracking: boolean;
+  repeat: RepeatFrequency;
+  repeatDays: number[];
+  repeatEndDate: string | null;
+  links: TaskLink[];
+}

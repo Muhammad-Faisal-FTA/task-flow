@@ -12,6 +12,7 @@ import {
   Link as LinkIcon,
   MapPin,
   Share2,
+  UserPlus,
   Timer,
 } from "lucide-react";
 import { HeaderBar } from "@/components/layout/HeaderBar";
@@ -21,6 +22,7 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { TimePicker } from "@/components/ui/TimePicker";
 import { LinksSection } from "@/components/task/LinksSection";
 import { TaskDurationField } from "@/components/task/TaskDurationField";
+import { TaskFlowShareDialog } from "@/components/task/TaskFlowShareDialog";
 
 import { cn } from "@/lib/cn";
 import { REPEAT_OPTIONS } from "@/lib/data";
@@ -145,6 +147,7 @@ export function DetailScreen({ state }: DetailScreenProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isRepeatScopeDialogOpen, setIsRepeatScopeDialogOpen] = useState(false);
   const [openPicker, setOpenPicker] = useState<"date" | "time" | null>(null);
+  const [isTaskFlowShareOpen, setIsTaskFlowShareOpen] = useState(false);
 
   useEffect(() => {
     if (selectedTask) {
@@ -252,6 +255,20 @@ export function DetailScreen({ state }: DetailScreenProps) {
               </button>
             )}
 
+            {!isNew && form.id && (
+              <button
+                onClick={() => setIsTaskFlowShareOpen(true)}
+                className="w-9 h-9 flex items-center justify-center rounded-[8px] active:scale-90 transition-transform"
+                style={{ backgroundColor: "var(--color-bg-card)" }}
+                aria-label="Share task with a TaskFlow user"
+              >
+                <UserPlus
+                  className="w-4 h-4"
+                  style={{ color: "var(--color-text-hint)" }}
+                />
+              </button>
+            )}
+
             {/* Delete button — only for existing tasks */}
             {!isNew && (
               <button
@@ -269,6 +286,13 @@ export function DetailScreen({ state }: DetailScreenProps) {
           </div>
         }
       />
+      {form.id && (
+        <TaskFlowShareDialog
+          taskId={form.id}
+          open={isTaskFlowShareOpen}
+          onClose={() => setIsTaskFlowShareOpen(false)}
+        />
+      )}
       {/* ── Scrollable content ──────────────────────────────────────── */}
       {/* ↓ padding-bottom reduced — save button no longer fixed       */}
       <div

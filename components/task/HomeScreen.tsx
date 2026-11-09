@@ -168,8 +168,6 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
   const isEmpty = tasks.length === 0;
   const now = new Date();
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  const timedTodayTasks = tasks.filter((task) => isTimedTaskOnDate(task, today));
-
   return (
     <div className="relative flex h-full min-h-0 flex-col">
       {/* ── Header ────────────────────────────────────────────────────── */}
@@ -298,7 +296,7 @@ export function HomeScreen({ state }: { state: HomeScreenState }) {
         ) : (
           <>
             <TaskTimeline
-              tasks={timedTodayTasks}
+              tasks={tasks}
               onTaskClick={openTask}
               onToggle={toggle}
               isToggling={isToggling}

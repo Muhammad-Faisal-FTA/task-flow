@@ -12,6 +12,7 @@ import type {
   UpdateListInput,
   TaskQueryParams 
 } from '@/types/task';
+import type { ShareAllowListUser, ShareableUser, TaskShareInvitation } from '@/types/sharing';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -212,6 +213,41 @@ export const listApi = {
    */
   async deleteList(listId: string): Promise<void> {
     await api.delete(`/api/lists/${listId}`);
+  },
+};
+
+export const sharingApi = {
+  async getAllowList(): Promise<ShareAllowListUser[]> {
+    const response = await api.get<ApiResponse<ShareAllowListUser[]>>('/api/sharing/allow-list');
+    return response.data.data;
+  },
+
+  async updateAllowList(userIds: string[]): Promise<ShareAllowListUser[]> {
+    const response = await api.patch<ApiResponse<ShareAllowListUser[]>>('/api/sharing/allow-list', { userIds });
+    return response.data.data;
+  },
+
+  async getEligibleRecipients(): Promise<ShareableUser[]> {
+    const response = await api.get<ApiResponse<ShareableUser[]>>('/api/sharing/recipients');
+    return response.data.data;
+  },
+
+  async shareTask(taskId: string, recipientId: string): Promise<{ id: string }> {
+    const response = await api.post<ApiResponse<{ id: string }>>('/api/sharing/tasks', { taskId, recipientId });
+    return response.data.data;
+  },
+
+  async getInvitations(): Promise<TaskShareInvitation[]> {
+    const response = await api.get<ApiResponse<TaskShareInvitation[]>>('/api/sharing/invitations');
+    return response.data.data;
+  },
+
+  async respondToInvitation(shareId: string, action: 'accept' | 'decline'): Promise<{ accepted: boolean; taskId?: string }> {
+    const response = await api.patch<ApiResponse<{ accepted: boolean; taskId?: string }>>(
+      `/api/sharing/invitations/${shareId}`,
+      { action },
+    );
+    return response.data.data;
   },
 };
 

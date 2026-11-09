@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { boolean, check, date, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
-import type { TaskLink } from "@/types/task";
+import type { TaskLink, TaskShareSnapshot } from "@/types/task";
 
 const timestamps = () => ({
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -9,6 +9,7 @@ const timestamps = () => ({
 export const repeatEnum = pgEnum("repeat_frequency", ["none", "daily", "weekdays", "weekly", "monthly", "yearly", "custom"]);
 export const taskTypeEnum = pgEnum("task_type", ["task", "event"]);
 export const taskPriorityEnum = pgEnum("task_priority", ["A", "B", "C", "D"]);
+export const taskShareStatusEnum = pgEnum("task_share_status", ["pending", "accepted", "declined"]);
 export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
 export const adminFeatures = ["tasks", "lists", "cdf", "notifications"] as const;
 export const thirdPartyServices = ["email", "push"] as const;
@@ -46,6 +47,29 @@ export const tasks = pgTable("tasks", {
   priority: taskPriorityEnum("priority").default("C").notNull(), cdfTracking: boolean("cdf_tracking").default(false).notNull(), deletedAt: timestamp("deleted_at", { withTimezone: true }),
   links: jsonb("links").$type<TaskLink[]>().default([]).notNull(), ...timestamps(),
 }, (t) => [index("tasks_user_due_idx").on(t.userId, t.dueDate), index("tasks_user_list_due_idx").on(t.userId, t.listId, t.dueDate), check("tasks_due_time_check", sql`${t.dueTime} is null or ${t.dueTime} ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'`)]);
+export const taskShareAllowlist = pgTable("task_share_allowlist", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ownerId: uuid("owner_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  allowedUserId: uuid("allowed_user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  ...timestamps(),
+}, (t) => [
+  uniqueIndex("task_share_allowlist_owner_allowed_unique").on(t.ownerId, t.allowedUserId),
+  index("task_share_allowlist_allowed_owner_idx").on(t.allowedUserId, t.ownerId),
+  check("task_share_allowlist_no_self_check", sql`${t.ownerId} <> ${t.allowedUserId}`),
+]);
+export const taskShares = pgTable("task_shares", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  taskId: uuid("task_id").references(() => tasks.id, { onDelete: "set null" }),
+  senderId: uuid("sender_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  recipientId: uuid("recipient_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  snapshot: jsonb("snapshot").$type<TaskShareSnapshot>().notNull(),
+  status: taskShareStatusEnum("status").default("pending").notNull(),
+  acceptedTaskId: uuid("accepted_task_id").references(() => tasks.id, { onDelete: "set null" }),
+  ...timestamps(),
+}, (t) => [
+  uniqueIndex("task_shares_pending_task_recipient_unique").on(t.taskId, t.recipientId).where(sql`${t.status} = 'pending'`),
+  index("task_shares_recipient_status_idx").on(t.recipientId, t.status, t.createdAt),
+]);
 export const pushSubscriptions = pgTable("push_subscriptions", {
   id: uuid("id").defaultRandom().primaryKey(), userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(), endpoint: text("endpoint").unique().notNull(),
   p256dh: text("p256dh").notNull(), auth: text("auth").notNull(), userAgent: text("user_agent"), ...timestamps(),

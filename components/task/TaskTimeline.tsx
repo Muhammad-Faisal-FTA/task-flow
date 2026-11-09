@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { FormEvent, KeyboardEvent, MouseEvent } from "react";
-import { X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { TaskTimelineGrid } from "@/components/task/TaskTimelineGrid";
 import type { TaskPriority } from "@/types/task";
 import type { Task, TaskList } from "@/types";
@@ -10,6 +10,12 @@ import { positionTimelineTasks } from "@/utils/positionTimelineTasks";
 
 const DAY_START = 0;
 const HOUR_HEIGHT = 64;
+
+function shiftDate(date: string, days: number) {
+  const shifted = new Date(`${date}T00:00:00`);
+  shifted.setDate(shifted.getDate() + days);
+  return `${shifted.getFullYear()}-${String(shifted.getMonth() + 1).padStart(2, "0")}-${String(shifted.getDate()).padStart(2, "0")}`;
+}
 
 interface TaskTimelineProps {
   tasks: Task[];
@@ -46,6 +52,7 @@ export function TaskTimeline({
   const [cdfTracking, setCdfTracking] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [now, setNow] = useState(() => new Date());
+  const [selectedDate, setSelectedDate] = useState(date);
   useEffect(() => {
     const update = () => setNow(new Date());
     const interval = window.setInterval(update, 15_000);
@@ -55,13 +62,15 @@ export function TaskTimeline({
       window.removeEventListener("focus", update);
     };
   }, []);
-  const isToday = date === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  useEffect(() => setSelectedDate(date), [date]);
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const isToday = selectedDate === today;
   const visibleStart = DAY_START;
   const visibleEnd = 24;
-  const positioned = positionTimelineTasks(tasks);
+  const positioned = positionTimelineTasks(tasks.filter((task) => task.dueDate?.slice(0, 10) === selectedDate));
   const height = (visibleEnd - visibleStart) * HOUR_HEIGHT;
   const currentMinute = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
-  const displayDate = new Date(`${date}T00:00:00`);
+  const displayDate = new Date(`${selectedDate}T00:00:00`);
 
   const beginQuickAdd = (time: string) => {
     setQuickTime(time);
@@ -88,7 +97,7 @@ export function TaskTimeline({
       const saved = await onQuickAdd({
         title: title.trim(),
         listId,
-        date,
+        date: selectedDate,
         time: quickTime,
         priority,
         cdfTracking,
@@ -118,25 +127,47 @@ export function TaskTimeline({
         >
           Schedule
         </span>
-        <div className="flex flex-col items-center leading-none">
-          <span
-            className="font-semibold tracking-widest uppercase"
-            style={{ fontSize: "var(--text-xs)", color: "var(--color-primary)" }}
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setSelectedDate((current) => shiftDate(current, -1))}
+            className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-white/10"
+            style={{ color: "var(--color-text-primary)" }}
+            aria-label="Show previous day"
+            title="Previous day"
           >
-            {displayDate.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase()}
-          </span>
-          <span
-            className="mt-1 flex h-9 w-9 items-center justify-center rounded-full font-semibold text-white"
-            style={{ backgroundColor: "var(--color-primary)", fontSize: "var(--text-md)" }}
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <div className="flex min-w-14 flex-col items-center leading-none">
+            <span
+              className="font-semibold tracking-widest uppercase"
+              style={{ fontSize: "var(--text-xs)", color: "var(--color-primary)" }}
+            >
+              {displayDate.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase()}
+            </span>
+            <span
+              className="mt-1 flex h-9 w-9 items-center justify-center rounded-full font-semibold text-white"
+              style={{ backgroundColor: "var(--color-primary)", fontSize: "var(--text-md)" }}
+            >
+              {displayDate.getDate()}
+            </span>
+            <span
+              className="mt-1"
+              style={{ fontSize: "10px", color: "var(--color-text-hint)" }}
+            >
+              {displayDate.toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSelectedDate((current) => shiftDate(current, 1))}
+            className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-white/10"
+            style={{ color: "var(--color-text-primary)" }}
+            aria-label="Show next day"
+            title="Next day"
           >
-            {displayDate.getDate()}
-          </span>
-          <span
-            className="mt-1"
-            style={{ fontSize: "10px", color: "var(--color-text-hint)" }}
-          >
-            {displayDate.toLocaleDateString("en-US", { month: "short", year: "numeric" })}
-          </span>
+            <ChevronRight className="h-5 w-5" />
+          </button>
         </div>
         <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-hint)" }}>
           {positioned.length} timed
@@ -144,7 +175,7 @@ export function TaskTimeline({
       </div>
 
       <TaskTimelineGrid
-        key={`${date}-${isToday}`}
+        key={`${selectedDate}-${isToday}`}
         tasks={positioned}
         startHour={visibleStart}
         endHour={visibleEnd}

@@ -78,6 +78,13 @@
                         "when":  1793772000000,
                         "tag":  "0010_cdf_tracking_default_off",
                         "breakpoints":  true
+                    },
+                    {
+                        "idx":  11,
+                        "version":  "7",
+                        "when":  1794230000000,
+                        "tag":  "0011_task_sharing",
+                        "breakpoints":  true
                     }
                 ]
 }

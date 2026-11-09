@@ -566,7 +566,7 @@ import { SidebarNav }               from "@/components/layout/SidebarNav";
 import { useTheme }                 from "@/hooks/useTheme";
 import { THEME_NAMES }              from "@/lib/themes";
 import {
-  Bell, Shield, ChevronRight,
+  Bell, Shield, ChevronRight, Users,
   LogOut, Trash2, BarChart2,
   Moon, Info, Mail,
 } from "lucide-react";
@@ -977,6 +977,16 @@ export default function SettingsPage() {
         {/* ── Notifications ─────────────────────────────────────────── */}
         <SettingsSection title="Notifications">
           <NotificationRow />
+        </SettingsSection>
+
+        {/* ── Task sharing ──────────────────────────────────────────── */}
+        <SettingsSection title="Task sharing">
+          <SettingsRow
+            icon={<Users style={{ width: "16px", height: "16px" }} />}
+            label="Sharing permissions and invitations"
+            value="Choose who may share tasks with you"
+            onClick={() => router.push("/sharing")}
+          />
         </SettingsSection>
 
         {/* ── Account ───────────────────────────────────────────────── */}

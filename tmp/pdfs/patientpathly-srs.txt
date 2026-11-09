@@ -1,0 +1,1826 @@
+=== PAGE 1 ===
+PATIENTPATHLY WEB  |  COMBINED SRS + SDD 
+Draft baseline • Confirm open decisions before implementation • Page 1 
+PatientPathly Web 
+Combined Software Requirements Specification (SRS) and Software Design Description (SDD)  
+Version 1.0 — Requirements baseline for planning and implementation 
+Prepared from: PatientPathly Web — Role-Based Permissions: Database Design, System Architecture and Implementation Guide 
+(uploaded 9-page architecture baseline), plus the scope decisions supplied in this conversation. 
+Document status: Draft baseline for product and engineering review. This document intentionally distinguishes source-confirmed 
+architecture, user-confirmed scope, proposed design decisions, and unresolved product decisions. 
+Intended audience: Product owner, UX/UI, frontend engineering, backend engineering, database engineering, QA, DevOps and 
+security reviewers. 
+Control Value 
+Product PatientPathly Web 
+Target platform Responsive web application 
+Confirmed stack React web frontend; Node.js/Express API; PostgreSQL database  
+Primary design principle Deny by default; backend authorization is authoritative  
+Multi-branch model One organization may operate multiple facilities/branches  
+External services in scope Google Maps/Places/geolocation for patient discovery; email provider/SMTP  
+Out of scope for this baseline Features not confirmed as implemented or approved; see Open Decisions and 
+Exclusions 
+Source architecture status The uploaded document describes an RBAC/database architecture baseline, not 
+proof that the listed product modules are implemented.  
+ 
+Document conventions and evidence labels 
+Label Meaning 
+CONFIRMED Explicitly selected by the user or directly specified in the uploaded architecture 
+document. 
+SOURCE BASELINE Architecture or requirement stated in the uploaded PDF; not necessarily 
+implemented in the product. 
+PROPOSED A design recommendation added to make the SRS/SDD implementable. Requires 
+product/engineering approval before being treated as binding.  
+OPEN DECISION A choice that cannot safely be settled from the current source material.  
+EXCLUDED / NOT ASSUMED A feature not confirmed as implemented or approved; it is not silently added to 
+the implementation scope. 
+ 
+Important interpretation: the user stated that additional features are not implemented and should be excluded. Accordingly, this 
+specification does not claim that any described screen, endpoint, database table, map flow, or business module already exists. The 
+document defines a target specification for the selected scope; proposed behaviors must be reviewed before development. 
+  
+
+=== PAGE 2 ===
+PATIENTPATHLY WEB  |  COMBINED SRS + SDD 
+Draft baseline • Confirm open decisions before implementation • Page 2 
+Part A — Software Requirements Specification (SRS) 
+1. Purpose 
+This SRS defines what PatientPathly Web is expected to do at the product level. It describes user roles, modules, screens, actions, 
+field-level CRUD, workflows, authorization, integrations, error behavior, non-functional requirements and acceptance criteria. The 
+companion SDD translates these requirements into a proposed technical design. 
+2. Product scope 
+REQUIRED PRODUCT SCOPE: PatientPathly is a healthcare platform for public patients and healthcare organization users, 
+supporting multiple clinics/branches under an organization. The required feature areas are OPD management, appointment 
+scheduling, inpatient management, emergency (ER), laboratory (LIS), radiology and imaging, pharmacy management, billing and 
+payments, inventory management, patient portal and mobile app, HR and staff management, reports and analytics, security and 
+compliance, multi-clinic/multi-branch administration, and telemedicine/virtual care. The existing approved technology direction is 
+React + Node.js/Express + PostgreSQL. Maps/Places/geolocation and email are the only previously confirmed third-party integration 
+categories; additional integrations must be specified and approved. 
+SOURCE BASELINE: the uploaded architecture defines tenant-aware users, organizations, roles, permissions, scoped role 
+assignments, sessions and append-only audit logs. It recommends deny-by-default authorization, backend enforcement, tenant-
+scoped repositories, role/permission cache invalidation, and audit logging. 
+PROPOSED: patient-facing discovery is a public-facing capability that allows users to search nearby participating facilities using 
+location consent or a manually entered area. It should not expose patient locations or clinical records. 
+3. Goals 
+• Give patients a clear way to discover nearby participating healthcare facilities and request or manage appointments, subject to 
+approved workflows. 
+• Give authorized staff tools to manage patient registration, appointments, clinical records, laboratory workflows and billing. 
+• Support organization-level administration with multiple branches, departments and scoped staff access. 
+• Enforce permissions consistently in the UI and API, with the API/database access layer authoritative. 
+• Provide traceable requirements so each requirement maps to screens, actions, permissions, endpoints, data entities and tests. 
+• Make third-party integrations configurable, resilient to provider failures, and limited to the approved services. 
+4. Scope boundaries 
+In scope for the target specification Not assumed / excluded unless later approved 
+Authentication and account lifecycle; organization and branch administration; 
+patient profiles; appointments; clinical notes/diagnoses/prescriptions; lab 
+orders/results; invoices/payments as internal records; patient discovery; reports; 
+RBAC; email notifications. 
+Mobile native app; live patient tracking; emergency dispatch; telemedicine/video 
+calls; insurance claim clearinghouse integration; external lab integrations; 
+pharmacy inventory; e-prescribing network; SMS/WhatsApp; online payment 
+gateway; calendar sync; AI diagnosis or treatment recommendations; medical -
+device integrations. 
+Google Maps/Places-based facility discovery and email delivery integration.  Any additional paid APIs or providers beyond maps and email.  
+Audit events for security and sensitive actions. A claim of legal/regulatory certification or compliance without a separate 
+compliance assessment. 
+ 
+Billing and payments are mandatory feature areas. The required scope includes billing, insurance, e-payments and reconciliation. 
+Payment gateway, insurer connectivity, claim submission, settlement/reconciliation sources, supported payment methods, refunds 
+and financial controls require product-owner decisions and integration approval before their detailed workflows are finalized. 
+5. Stakeholders and actors 
+Actor Purpose / expected access boundary 
+Public visitor Search participating facilities and view approved public listing information. No 
+access to protected patient or staff data. 
+Patient Manage own account/profile, view own appointments and notifications, and use 
+discovery. Clinical record access beyond an approved patient portal is an open 
+decision. 
+Platform Super Admin Platform-level organization onboarding/configuration and operational support. 
+No routine clinical access by default. 
+Hospital/Organization Administrator Manage organization settings, branches/facilities, departments, staff accounts, 
+role assignments and organization reports within granted scope.  
+
+=== PAGE 3 ===
+PATIENTPATHLY WEB  |  COMBINED SRS + SDD 
+Draft baseline • Confirm open decisions before implementation • Page 3 
+Doctor Access assigned appointments and authorized patient charts; create clinical 
+documentation and prescriptions where permitted. 
+Nurse Access assigned patient/appointment context and enter permitted vitals/nursing 
+documentation; no prescribing by default. 
+Receptionist Register patients, manage demographics and appointments, and check in 
+patients within assigned facility scope. 
+Lab Technician Access authorized lab orders, update sample/work status and enter results; 
+verification rights are separate. 
+Billing Officer Create and manage invoices, record payments and view financial reports within 
+assigned scope. 
+Auditor / Compliance Read-only access to approved audit evidence and reports. 
+System services Maps provider and email provider act through backend/frontend integration 
+boundaries and must not gain application permissions.  
+ 
+Pharmacy management and inventory management are mandatory feature areas for this scope, including stock control, prescription 
+handling, dispensing, medicines, consumables and asset tracking. Detailed inventory policies, procurement, stock adjustment 
+approvals, medication safety checks and external supplier integrations remain to be specified; do not assume features beyond the 
+stated requirements. 
+6. Assumptions and open decisions 
+ID Item Current handling 
+A-01 A tenant/organization may contain multiple 
+branches/facilities. 
+PROPOSED structure based on confirmed multi -
+branch requirement; approve branch ownership 
+rules. 
+A-02 A user can have multiple roles, each optionally 
+scoped to an organization, facility or department. 
+SOURCE BASELINE supports multiple roles and 
+scope; confirm exact scope hierarchy. 
+A-03 Patient discovery lists participating facilities rather 
+than tracking people. 
+PROPOSED privacy-preserving interpretation of 
+patient-facing map feature. 
+A-04 A patient can be registered by self -service and/or 
+staff. 
+OPEN DECISION; design should allow one or both 
+without assuming activation rules. 
+A-05 Appointments use a facility-local timezone and are 
+assigned to a doctor/facility. 
+PROPOSED; scheduling rules and slot generation 
+require approval. 
+A-06 Clinical records require stricter permissions and 
+auditability than ordinary profile fields. 
+SOURCE BASELINE explicitly recommends separate 
+clinical permissions and auditing. 
+A-07 Deletion of clinical, billing and audit records should 
+generally be soft-delete/void/amendment, not 
+physical deletion. 
+PROPOSED safety and traceability rule; approve 
+retention/legal policy. 
+A-08 Google Maps/Places API is used only for facility 
+search/map display and location-assisted search. 
+CONFIRMED integration category; exact APIs, billing, 
+key restrictions and provider terms need 
+configuration. 
+A-09 Email sends verification/recovery and product 
+notifications. 
+PROPOSED email uses; exact triggers/templates are 
+open decisions. 
+O-01 Which patient account features are permitted: 
+appointments only, records, results, prescriptions, 
+invoices? 
+Must decide before patient portal implementation. 
+O-02 Can patients book appointments directly, or only 
+submit requests for staff approval? 
+Must decide before appointment booking UX/API.  
+O-03 Are staff assigned to one branch, multiple branches, 
+or organization-wide? 
+Must decide before final role-scope matrix. 
+O-04 Can patient records be shared across branches 
+within one organization? Under what conditions? 
+Must decide before cross-branch chart access. 
+O-05 Which clinical fields and workflows are mandatory 
+(vitals, allergies, diagnoses, notes, prescriptions, 
+attachments)? 
+Must decide before final clinical schema. 
+O-06 Does billing need only recording of 
+cash/bank/manual payments, or an online gateway 
+later? 
+Gateway is excluded from current third-party scope. 
+O-07 Which country/region's healthcare privacy, record -
+retention and consent requirements apply? 
+Must be established before production compliance 
+claims. 
+O-08 What are appointment cancellation windows, no -
+show handling, fees and refund policy? 
+Must be set before acceptance tests for 
+appointment/billing lifecycle. 
+O-09 Are facility listings public and who verifies/approves 
+them? 
+Must decide before public discovery launch. 
+O-10 Should lab results require a separate verifier before 
+patient/staff release? 
+Source baseline recommends separating entry and 
+verification; workflow needs confirmation. 
+ 
+These open decisions do not block a first architecture baseline. They do block final approval of some business rules and should be 
+resolved before implementing the affected workflow. 
+
+=== PAGE 4 ===
+PATIENTPATHLY WEB  |  COMBINED SRS + SDD 
+Draft baseline • Confirm open decisions before implementation • Page 4 
+7. Functional requirements 
+7.1 Authentication and account lifecycle 
+ID Requirement Priority 
+FR-AUTH-01 The system shall allow an authorized user to sign in 
+using configured credentials and establish a server -
+validated session. 
+Must 
+FR-AUTH-02 The system shall reject inactive users, inactive 
+organizations and revoked/expired sessions. 
+Must 
+FR-AUTH-03 The system shall support sign-out and server-side 
+session/token revocation. 
+Must 
+FR-AUTH-04 The system shall provide password recovery through 
+a time-limited, single-use token delivered by email, if 
+password-based authentication is selected. 
+Must; email flow details to approve 
+FR-AUTH-05 The system shall return the current user's 
+organization context, roles, effective permissions 
+and active scopes through a dedicated endpoint. 
+Must 
+FR-AUTH-06 The system shall rate-limit login and recovery 
+requests and avoid revealing whether an email is 
+registered. 
+Must 
+FR-AUTH-07 Public patient registration and email verification 
+activation rules shall follow an approved registration 
+policy. 
+Open decision 
+ 
+7.2 Organization, branch and department management 
+ID Requirement Priority 
+FR-ORG-01 An authorized administrator shall create, view, 
+update and deactivate an organization within 
+permitted platform scope. 
+Must for platform administration 
+FR-ORG-02 An organization administrator shall create, view, 
+update and deactivate branches/facilities belonging 
+to their organization. 
+Must 
+FR-ORG-03 An authorized administrator shall manage 
+departments linked to a branch or organization 
+according to the approved hierarchy. 
+Must 
+FR-ORG-04 A facility shall have a name, address, contact 
+details, timezone, status and optional geographic 
+coordinates for discovery. 
+Proposed minimum fields 
+FR-ORG-05 The system shall prevent branch or department 
+references from crossing organization boundaries.  
+Must 
+FR-ORG-06 Only active and approved facilities shall appear in 
+public discovery. 
+Proposed; approval policy open 
+FR-ORG-07 Changing a user's branch assignment shall take 
+effect in authorization checks and invalidate cached 
+permissions. 
+Must 
+ 
+7.3 Patient management 
+ID Requirement Priority 
+FR-PAT-01 Authorized staff shall create a patient profile with 
+validated demographic and contact fields. 
+Must 
+FR-PAT-02 Authorized users shall search and list patients only 
+within their permitted organization/facility scope.  
+Must 
+FR-PAT-03 Authorized staff shall view patient details with 
+sensitive fields restricted by permission. 
+Must 
+FR-PAT-04 Authorized staff shall update allowed patient fields; 
+clinical history shall not be overwritten through 
+demographic edit endpoints. 
+Must 
+FR-PAT-05 Patient archival/deactivation shall preserve 
+references to appointments, clinical records and 
+invoices. 
+Proposed; physical deletion disallowed by default  
+FR-PAT-06 The system shall detect likely duplicate patients 
+using approved identifiers and provide a safe review 
+workflow. 
+Proposed; identifier rules open 
+FR-PAT-07 Patients shall only access their own account and any 
+portal data explicitly approved for patient access. 
+Must; portal data scope open 
+FR-PAT-08 Patient reads, exports and sensitive updates shall be 
+auditable according to policy. 
+Must for sensitive actions 
+ 
+
+=== PAGE 5 ===
+PATIENTPATHLY WEB  |  COMBINED SRS + SDD 
+Draft baseline • Confirm open decisions before implementation • Page 5 
+7.4 Appointment management 
+ID Requirement Priority 
+FR-APT-01 Authorized users shall create an appointment linked 
+to a patient, organization, facility and, where 
+applicable, doctor/department. 
+Must 
+FR-APT-02 Users shall list/search appointments using date 
+range, status, facility and permitted patient/doctor 
+filters. 
+Must 
+FR-APT-03 Authorized users shall view appointment details 
+subject to scope. 
+Must 
+FR-APT-04 Authorized users shall reschedule or cancel 
+appointments subject to policy and state transitions.  
+Must 
+FR-APT-05 Receptionists shall check in eligible appointments 
+within their facility scope. 
+Must 
+FR-APT-06 The system shall validate that the selected patient, 
+doctor and facility belong to the correct organization 
+and that the selected doctor is eligible for the facility.  
+Must 
+FR-APT-07 The system shall prevent conflicting bookings for the 
+same doctor/slot where slot-based booking is 
+enabled. 
+Proposed; scheduling model open 
+FR-APT-08 Appointment status changes and relevant 
+notifications shall be auditable. 
+Must 
+ 
+7.5 Clinical workflows 
+ID Requirement Priority 
+FR-CLN-01 An authorized clinician shall view the patient chart 
+only when the user's permission and resource scope 
+permit access. 
+Must 
+FR-CLN-02 An authorized clinician shall create clinical notes 
+associated with a patient and author. 
+Must 
+FR-CLN-03 The system shall distinguish draft, signed and 
+amended clinical notes. 
+Proposed states; approve final lifecycle 
+FR-CLN-04 Signed clinical notes shall not be silently overwritten; 
+corrections shall preserve the original and record an 
+amendment trail. 
+SOURCE BASELINE recommends signed notes are 
+immutable 
+FR-CLN-05 Authorized clinicians shall manage diagnoses and 
+prescriptions using separate permissions. 
+Must 
+FR-CLN-06 Nursing/vitals entry shall be permission-separated 
+from prescribing and note signing. 
+Must 
+FR-CLN-07 The system shall audit sensitive chart reads, note 
+signing/amendment and prescription actions. 
+Must 
+FR-CLN-08 Patient-facing release of notes, diagnoses and 
+prescriptions shall remain disabled until portal 
+visibility policy is approved. 
+Must; safe default 
+ 
+7.6 Laboratory workflows 
+ID Requirement Priority 
+FR-LAB-01 Authorized clinicians shall create lab orders linked to 
+a patient, facility and ordering user. 
+Must 
+FR-LAB-02 Authorized staff shall list and view lab orders within 
+their facility/organization scope. 
+Must 
+FR-LAB-03 Authorized lab technicians shall update 
+sample/work status and enter results. 
+Must 
+FR-LAB-04 Result verification shall be a separate permission 
+and state transition if enabled by the approved 
+workflow. 
+Source recommendation; approval required 
+FR-LAB-05 The system shall preserve author, timestamps and 
+amendments for lab results. 
+Must 
+FR-LAB-06 External lab integrations are excluded from this 
+baseline. 
+Excluded 
+ 
+7.7 Billing and payments 
+ID Requirement Priority 
+FR-BILL-01 Authorized billing staff shall create invoices 
+associated with a patient, organization and facility.  
+Must 
+FR-BILL-02 Authorized users shall view and search invoices 
+within permitted scope. 
+Must 
+FR-BILL-03 Authorized billing staff shall update draft invoices; Proposed control 
+
+=== PAGE 6 ===
+PATIENTPATHLY WEB  |  COMBINED SRS + SDD 
+Draft baseline • Confirm open decisions before implementation • Page 6 
+issued invoices shall use an approved 
+correction/void workflow rather than silent edits. 
+FR-BILL-04 Authorized billing staff shall record manual payment 
+transactions with amount, method, reference and 
+timestamp. 
+Proposed; payment methods to approve 
+FR-BILL-05 The system shall prevent payment amounts from 
+exceeding the outstanding balance unless an 
+approved credit/overpayment policy exists. 
+Proposed 
+FR-BILL-06 Refund approval shall be separate from payment 
+recording if refunds are supported. 
+Source permission taxonomy includes refund 
+approval; exact workflow open 
+FR-BILL-07 Online payment gateway, insurance claims and 
+external billing integrations are excluded from the 
+confirmed integration scope. 
+Excluded 
+FR-BILL-08 Billing reports shall be restricted to users with 
+financial-report permissions. 
+Must 
+ 
+7.8 Patient discovery and maps 
+ID Requirement Priority 
+FR-DISC-01 A public visitor/patient shall search for participating 
+facilities by entered location or current location 
+when consent is granted. 
+Must 
+FR-DISC-02 The UI shall offer a manual location/search fallback 
+when geolocation is denied, unavailable or times 
+out. 
+Must 
+FR-DISC-03 The result list and map shall show only public -
+approved facility data such as name, address, public 
+contact details and approved specialties/services.  
+Must 
+FR-DISC-04 The system shall not expose patient/staff live 
+locations or protected medical data through map 
+APIs. 
+Must 
+FR-DISC-05 The UI shall communicate loading, no-results, 
+provider-error and permission-denied states. 
+Must 
+FR-DISC-06 The system shall avoid calling paid map services 
+until the user invokes a map/search action where 
+practical, and shall respect provider key restrictions 
+and quotas. 
+Proposed cost control 
+FR-DISC-07 Distance/routing and location accuracy shall not be 
+represented as guaranteed; results shall indicate 
+that location may be approximate. 
+Proposed 
+FR-DISC-08 Facility coordinates, public listing approval and 
+exact map APIs are configuration/open decisions.  
+Open decision 
+ 
+7.9 RBAC and audit 
+ID Requirement Priority 
+FR-RBAC-01 The system shall use a centralized permission 
+catalog with stable machine-readable permission 
+codes. 
+SOURCE BASELINE 
+FR-RBAC-02 Users may have multiple active role assignments 
+with optional scope and expiry. 
+SOURCE BASELINE 
+FR-RBAC-03 Roles shall map to permissions through explicit 
+allow/deny effects; explicit deny shall override allow.  
+SOURCE BASELINE 
+FR-RBAC-04 Every protected API shall enforce authentication, 
+permission, scope and applicable policy server -side. 
+Must 
+FR-RBAC-05 Organization/facility/department scoping shall be 
+applied in repository queries, not only in frontend 
+filtering. 
+Must 
+FR-RBAC-06 Administrators shall manage custom roles and 
+permission assignments only within the permissions 
+they are authorized to delegate. 
+Must 
+FR-RBAC-07 Role/permission changes shall be transactional, 
+audited and invalidate authorization caches. 
+Must 
+FR-RBAC-08 Security audit records shall be append -only at 
+application level and shall not include passwords, 
+raw tokens or sensitive record bodies. 
+SOURCE BASELINE 
+FR-RBAC-09 System roles and permission definitions shall be 
+protected from unauthorized deletion/modification.  
+Must 
+ 
+7.10 Reports and dashboards 
+ID Requirement Priority 
+
+=== PAGE 7 ===
+PATIENTPATHLY WEB  |  COMBINED SRS + SDD 
+Draft baseline • Confirm open decisions before implementation • Page 7 
+FR-REP-01 The dashboard shall display only metrics that the 
+current user is permitted to access. 
+Must 
+FR-REP-02 Operational reports may include appointment 
+volumes/status and patient registration counts 
+within permitted scope. 
+Proposed 
+FR-REP-03 Financial reports shall require dedicated 
+billing/report permissions. 
+Must 
+FR-REP-04 Clinical and security audit reports shall have 
+separate permissions. 
+SOURCE BASELINE 
+FR-REP-05 Exports shall require explicit export permission, 
+apply the same scope filters as on-screen results 
+and be audited. 
+Must 
+FR-REP-06 Exact KPIs, report formats, date ranges and export 
+formats are open decisions. 
+Open decision 
+ 
+7.11 Notifications and email 
+ID Requirement Priority 
+FR-NOT-01 The system shall create in-app notification records 
+for approved product events. 
+Proposed; event list open 
+FR-NOT-02 Users shall list notifications and mark individual 
+notifications or all notifications as read. 
+Proposed 
+FR-NOT-03 Email shall be used for approved account and 
+workflow messages. 
+Integration category confirmed; triggers open 
+FR-NOT-04 Email failures shall be logged without exposing 
+credentials or sensitive clinical content and retried 
+under a bounded policy. 
+Proposed 
+FR-NOT-05 Notifications shall avoid including detailed clinical 
+information unless specifically approved; secure 
+sign-in should be used to view protected details. 
+Must 
+FR-NOT-06 Exact triggers, templates, preferences, retry count 
+and retention are open decisions. 
+Open decision 
+ 
+7.12 Additional mandatory feature areas from the product feature list 
+The following feature areas are mandatory requirements supplied by the product owner. The capability descriptions below preserve 
+the supplied list; detailed workflows, field rules, APIs, data entities and acceptance criteria must be elaborated during requirements 
+review. 
+FR-01 — OPD Management 
+The system shall support patient registration, outpatient consultation, follow-up visits and e-prescriptions. 
+FR-02 — Appointment Scheduling 
+The system shall support online and walk-in appointments and appointment reminders. 
+FR-03 — Inpatient Management 
+The system shall support inpatient admission, bed management and room allocation. 
+FR-04 — Emergency (ER) 
+The system shall support emergency triage, quick registration and real-time alerts. 
+FR-05 — Laboratory Information System (LIS) 
+The system shall support laboratory test orders, sample tracking, results and reports. 
+FR-06 — Radiology & Imaging 
+The system shall support X-ray, ultrasound, CT and MRI workflows, including report management. 
+FR-07 — Pharmacy Management 
+The system shall support medicine stock control, prescription handling, dispensing and pharmacy inventory. 
+FR-08 — Billing & Payments 
+The system shall support billing, insurance-related workflows, electronic payments and reconciliation. External payment and 
+insurance integrations require approval and detailed specifications. 
+
+=== PAGE 8 ===
+PATIENTPATHLY WEB  |  COMBINED SRS + SDD 
+Draft baseline • Confirm open decisions before implementation • Page 8 
+FR-09 — Inventory Management 
+The system shall support tracking of medicines, consumables and assets. 
+FR-10 — Patient Portal & Mobile App 
+The patient-facing experience shall support booking, appointment/status tracking, viewing available results and receiving 
+notifications. A mobile application is required by the feature list; whether it is native, cross-platform or responsive web is an open 
+platform decision. 
+FR-11 — HR & Staff Management 
+The system shall support staff records, shifts, attendance and payroll. Payroll rules, calculations and any external payroll integration 
+require detailed requirements. 
+FR-12 — Reports & Analytics 
+The system shall support operational, financial, clinical and custom reports. 
+FR-13 — Security & Compliance 
+The system shall provide data protection controls, audit trails and regulatory compliance controls. Applicable jurisdictions, 
+standards, retention periods and audit requirements must be confirmed. 
+FR-14 — Multi-Clinic / Multi-Branch 
+The system shall support management of multiple clinics/branches from one system, with organization and branch scoping 
+enforced by authorization rules. 
+FR-15 — Telemedicine / Virtual Care 
+The system shall support video consultations and remote follow-ups. Video provider, consent, scheduling, recording policy, security 
+and integration details require approval. 
+8. Screen inventory and navigation 
+This is a proposed screen inventory for the confirmed scope, not a statement that these screens already exist. A screen is displayed 
+only when the user's role and permissions allow it. 
+Screen ID / Screen Primary users Main controls/actions Permission examples 
+UI-01 Sign in All account users Email, password, Sign in, Forgot 
+password 
+auth.session.create 
+UI-02 Recover/reset password Account users Email submit, verification link, new 
+password, confirm 
+auth.password.reset 
+UI-03 Registration / verification Patient and/or invited staff Registration form, submit, resend 
+verification 
+auth.registration.create; policy TBD 
+UI-04 Patient discovery Public visitor/patient Search location, Use my location, 
+filters, map/list toggle, facility card, 
+View details 
+Public listing policy; no clinical permission 
+UI-05 Facility details Public visitor/patient Address, services, contact, map 
+marker, Request/book appointment 
+if approved 
+facility.public.read; booking policy TBD 
+UI-06 Patient dashboard Patient Upcoming appointments, 
+notifications, profile shortcuts 
+patient.self.read; portal scope TBD 
+UI-07 Staff dashboard Staff Counts and shortcuts based on 
+permitted modules 
+dashboard.read + metric-specific permissions 
+UI-08 Patient list Receptionist, clinician, authorized 
+staff 
+Search, filters, New patient, View, 
+Edit, Archive 
+patient.read/create/update/archive 
+UI-09 Patient create/edit Authorized staff; patient self-
+service if approved 
+Validated demographic/contact 
+form, Save, Cancel 
+patient.create/update 
+UI-10 Patient chart Authorized clinical staff Overview, appointments, clinical 
+notes, diagnoses, prescriptions, 
+lab, invoices tabs as permitted 
+patient.read + module-specific permissions 
+UI-11 Appointment calendar/list Receptionist, doctor, patient 
+within portal scope 
+Date range, branch, doctor, status 
+filters; New, View, Reschedule, 
+Cancel, Check in 
+appointment.read/create/reschedule/cancel/check_in  
+UI-12 Appointment create/edit Authorized staff / patient if direct 
+booking approved 
+Patient, facility, department, 
+doctor, date/time, reason, Save 
+appointment.create/update 
+UI-13 Clinical encounter Doctor/nurse according to 
+permission 
+Encounter summary, vitals, note 
+editor, diagnosis, prescription 
+actions, Save draft, Sign, Amend 
+clinical_note.create/read/sign/amend; 
+diagnosis.manage; prescription.create 
+UI-14 Lab orders/results Clinician, lab technician Order lab, status, enter result, verify lab_order.create/read; lab_result.enter/verify 
+
+=== PAGE 9 ===
+PATIENTPATHLY WEB  |  COMBINED SRS + SDD 
+Draft baseline • Confirm open decisions before implementation • Page 9 
+result if enabled 
+UI-15 Invoice list/details Billing staff, authorized patient 
+portal users 
+Search/filter, Create invoice, View, 
+Edit draft, Issue, Void/correct, 
+Record payment 
+invoice.create/read/update/issue; payment.record 
+UI-16 Organization settings Platform/organization admin View/edit organization details, 
+status 
+organization.read/manage 
+UI-17 Branch/facility 
+management 
+Organization admin List, Create, View, Edit, 
+Activate/deactivate, public listing 
+settings 
+facility.read/manage 
+UI-18 Department management Organization admin List, Create, Edit, Deactivate, 
+associate facility 
+department.read/manage 
+UI-19 Users and staff Authorized admin Search, invite/create, view, edit, 
+deactivate, assign 
+branch/department 
+user.read/create/update/deactivate 
+UI-20 Role management Authorized admin Role list, Create role, Edit role, 
+Clone if approved, 
+Deactivate/delete if allowed 
+rbac.role.read/create/update/delete 
+UI-21 Role permission editor Authorized admin Permission matrix, allow/deny, Save 
+changes, view effective permissions 
+rbac.role.assign_permissions 
+UI-22 User role assignment Authorized admin Select user, role, scope, 
+starts/expiry, reason, 
+Assign/Revoke 
+rbac.user.assign_role/revoke_role 
+UI-23 Audit log Auditor/admin with scope Filter actor/action/resource/date, 
+view event details, export if allowed 
+audit.security.read; audit.export 
+UI-24 Reports Role-dependent Date range, branch, report type, 
+Run, Export 
+report.read; report.export; billing.report.read 
+UI-25 Notifications Signed-in users List, open, mark read, mark all read notification.read/update 
+UI-26 Profile/settings Signed-in users View/edit allowed profile fields, 
+change password, sign out 
+user.self.read/update; auth.session.revoke 
+ 
+9. Button/action specification rules 
+All buttons must have a defined outcome, permission, validation behavior, loading state, success feedback and failure feedback. 
+Destructive or irreversible actions require confirmation. Buttons must not be the only authorization boundary; the API repeats the 
+relevant permission and scope checks. 
+Action class Expected behavior 
+Create / Save Validate required fields and formats; disable duplicate submission while 
+pending; persist through API; show field -level errors; on success navigate to 
+detail/list and refresh affected data. 
+View / Open Fetch by identifier through a scoped endpoint; return not -found or forbidden 
+without leaking cross-tenant existence. 
+Edit / Update Load current values; validate changes; reject immutable/signed fields; show 
+conflict if the record changed concurrently where optimistic locking is used.  
+Archive / Deactivate Show confirmation and impact; preserve referential integrity; require permission; 
+record actor/time/reason where appropriate. 
+Delete Physical deletion only for approved non-sensitive draft/configuration records 
+with no dependencies. Clinical, billing and audit records default to 
+void/archive/amendment rather than hard delete. 
+Reschedule / Cancel Validate state transition, schedule rules and branch scope; persist status 
+change; trigger only approved notifications. 
+Sign / Verify Require elevated permission; confirm action; preserve signer/verifier identity and 
+timestamp; prevent silent edit after finalization. 
+Export Check export permission server-side; apply identical filters/scope; avoid 
+including fields not permitted; audit export metadata.  
+Use my location Request browser geolocation only after explicit user action; show 
+denial/unavailable/timeout state and manual location alternative.  
+Save role permissions Save complete mapping transactionally; validate delegability; audit before/after 
+mapping; invalidate authorization cache. 
+ 
+10. Field-level CRUD matrix 
+The field lists below define a proposed minimum data contract. Requiredness and exact formats should be validated against the 
+product owner's final policy. Server-managed IDs, tenant IDs and audit timestamps must not be freely writable by clients. 
+Entity Create fields Read fields Update fields Delete / lifecycle 
+Organization name, legal/display 
+identifier, timezone, 
+contact fields 
+id, name, status, 
+timezone, contact, 
+created_at 
+name, contact, timezone, approved settings Deactivate; hard delete 
+restricted to empty/test 
+tenant and platform policy 
+Facility/Branch organization_id from 
+context, name, address, 
+approved public listing 
+fields; admin fields for 
+name/address/contact/timezone/coordinates/listing 
+state 
+Deactivate/unpublish; 
+preserve linked records 
+
+=== PAGE 10 ===
+PATIENTPATHLY WEB  |  COMBINED SRS + SDD 
+Draft baseline • Confirm open decisions before implementation • Page 10 
+public contact, timezone, 
+optional lat/lng, 
+status/listing state 
+authorized users 
+Department organization/facility 
+association, name, code, 
+status 
+id, name, branch, 
+status 
+name/code/status/association if permitted Deactivate; block if 
+dependencies require 
+reassignment 
+User email, name, account 
+type/status, 
+invite/registration data; org 
+context server-derived 
+profile, status, 
+roles/scopes 
+according to 
+permission 
+name, contact, status, approved profile fields Deactivate/revoke 
+sessions; do not cascade-
+delete audit history 
+Role organization scope if 
+custom, code, name, 
+description 
+role metadata and 
+mapped permissions 
+name/description and permitted mappings System roles protected; 
+custom role 
+deactivation/delete only if 
+unassigned and policy 
+allows 
+Permission Seeded through version-
+controlled migrations 
+code, module, action, 
+description 
+Code immutable; catalog changes via reviewed 
+migrations 
+Do not delete permission 
+definitions referenced by 
+role/audit history 
+RolePermission role_id, permission_id, 
+effect, approved conditions 
+role, permission, 
+effect, conditions 
+replace mapping transactionally Remove mapping only with 
+audit and cache 
+invalidation 
+UserRole assignment user_id, role_id, 
+scope_type/id, starts_at, 
+expires_at, assigned_by 
+assignment, scope, 
+expiry, assigning actor 
+scope/expiry only under explicit rules; reassign by 
+revoke + new assignment recommended 
+Revoke assignment; 
+preserve audit trail 
+Patient name, date_of_birth if 
+needed, contact, approved 
+identifiers, demographic 
+fields, consent/preferences 
+as approved 
+demographics and 
+permitted summary; 
+sensitive data 
+permission-filtered 
+approved demographics/contact fields; not clinical 
+history 
+Archive/deactivate; 
+deduplication/merge 
+requires audited special 
+workflow 
+Appointment patient_id, facility_id, 
+doctor_id/department, 
+start/end, reason/category, 
+status 
+details, status history, 
+permitted participant 
+data 
+time/provider/reason only in allowed states Cancel/no-
+show/complete; preserve 
+history 
+Clinical note patient_id, 
+encounter/appointment, 
+author, content, status 
+note and status 
+according to clinical 
+permission 
+Draft editable; signed note amended through 
+versioned amendment 
+No physical delete by 
+default; void/amend with 
+reason and audit 
+Diagnosis patient_id, code/text, 
+author, encounter, status 
+diagnosis fields based 
+on scope 
+correct via audited update/amendment policy Void/mark entered-in-
+error with audit, not silent 
+removal 
+Prescription patient_id, prescriber, 
+medication/details, 
+instructions, status 
+prescription fields for 
+authorized clinicians; 
+patient portal release 
+TBD 
+Only in allowed draft state; later corrections via 
+cancellation/reissue policy 
+Cancel with reason; 
+dispensing is excluded 
+Lab order patient_id, ordered_by, 
+facility, test/item, priority, 
+status 
+order details/status allowed status and collection fields Cancel with reason; 
+preserve history 
+Lab result lab_order_id, entered_by, 
+result values, units, 
+reference ranges where 
+configured 
+result and verification 
+status 
+amend through traceable correction; verify as 
+separate action 
+No silent delete; 
+void/correct with audit 
+Invoice patient_id, facility, line 
+items, currency, amounts, 
+due date, creator 
+items, totals, balance, 
+status 
+Draft only; issued record correction through 
+approved workflow 
+Void/credit note according 
+to policy; no hard delete 
+after issue 
+Payment record invoice_id, amount, 
+method, reference, 
+received_at, recorded_by 
+transaction metadata 
+and status 
+Correction via reversal/adjustment; do not overwrite 
+posted transactions 
+Reverse/void with 
+approval; gateway 
+processing excluded 
+Notification recipient_user_id, type, 
+template/data reference, 
+created_at 
+recipient's 
+notifications only 
+read_at/read state; preferences if approved Retention/cleanup policy; 
+never expose other users' 
+notifications 
+Audit log Created by trusted audit 
+service only 
+filtered events by audit 
+permission 
+No application update Append-only; retention 
+governed by approved 
+policy 
+ 
+11. Core business workflows 
+11.1 Sign-in and authorization 
+1. User submits credentials. 
+2. API validates credentials, account status, organization status and session state; rate limiting applies. 
+3. API issues a session/token using the approved secure-cookie strategy and returns user context. 
+4. Frontend requests the effective authorization profile and renders permitted routes/actions. 
+5. Every protected API repeats permission, scope and policy checks; a hidden UI button does not grant access. 
+
+=== PAGE 11 ===
+PATIENTPATHLY WEB  |  COMBINED SRS + SDD 
+Draft baseline • Confirm open decisions before implementation • Page 11 
+6. On role/scope changes, sessions/authorization versions and cached permissions are refreshed or revoked according to policy. 
+11.2 Branch-scoped patient registration 
+7. Staff selects an active branch from the branches available in their authorized scope. 
+8. Frontend requests patient creation form metadata; the server determines organization context from the authenticated session. 
+9. Staff submits patient demographics and any required consent/identifier fields. 
+10. API validates fields and verifies that all referenced branch/department IDs belong to the same organization. 
+11. Patient record is created in a transaction; actor, branch context and timestamp are recorded. 
+12. System returns the patient identifier and navigates to the patient detail page if access is still authorized. 
+11.3 Appointment lifecycle 
+13. Authorized user searches eligible patients, facilities, doctors and available appointment times. 
+14. User selects a patient, branch, clinician and time; API validates scope, eligibility and conflicts. 
+15. Appointment is created as the approved initial status (for example requested or confirmed; final status choice is open). 
+16. Authorized staff may confirm, reschedule, cancel or check in according to state-transition rules. 
+17. Each transition is audited and triggers only approved in-app/email notifications. 
+18. On completion, the appointment can link to a clinical encounter if that workflow is approved. 
+11.4 Clinical note lifecycle 
+19. Clinician opens an assigned appointment/patient chart and passes clinical-read permission and resource-scope checks. 
+20. Clinician creates a draft note and may add approved diagnoses/vitals/prescription data. 
+21. Authorized clinician saves the draft; draft remains editable within policy. 
+22. Signing requires a distinct permission; the API records signer and timestamp and makes the signed version immutable. 
+23. Correction after signing creates a linked amendment/version with author, timestamp and reason; the original remains 
+auditable. 
+24. Patient portal visibility is denied until an explicit release policy is approved. 
+11.5 Laboratory workflow 
+25. Authorized clinician creates a lab order tied to patient, ordering user and facility. 
+26. Lab technician views orders in assigned scope and updates permitted sample/work statuses. 
+27. Lab technician enters result values and units; validation rules depend on test catalog design. 
+28. If verification is enabled, a separately authorized verifier reviews and signs off the result. 
+29. All edits/corrections preserve author, timestamps and previous result versions. 
+30. External laboratory transmission is excluded from this release. 
+11.6 Invoice and manual payment recording 
+31. Billing user creates a draft invoice with line items and amounts. 
+32. API validates currency, arithmetic, patient/facility scope and permitted billing rules. 
+33. Authorized user issues the invoice; issued invoice becomes immutable except through approved correction/void process. 
+34. Billing user records a manual payment against the invoice; API validates positive amount and outstanding balance according to 
+policy. 
+35. System calculates invoice balance from posted transactions rather than trusting a client-submitted balance. 
+36. Payment gateway, insurance claims and automatic refunds are not included in this baseline. 
+11.7 Patient nearby-facility discovery 
+37. Patient opens discovery and chooses to enter an area/address or explicitly selects Use my location. 
+38. If browser location is granted, the UI sends the coordinates to the approved search flow; if denied/unavailable, manual search 
+remains usable. 
+39. Search service queries only active, approved, publicly listed facilities with valid coordinates/address data. 
+40. UI displays result cards and map markers with public-approved fields only. 
+41. Patient can open a facility detail page; appointment booking is shown only if the booking policy is approved and implemented. 
+42. Map-provider errors produce a usable list/manual-search fallback where available; no sensitive patient data is sent to the maps 
+provider. 
+
+=== PAGE 12 ===
+PATIENTPATHLY WEB  |  COMBINED SRS + SDD 
+Draft baseline • Confirm open decisions before implementation • Page 12 
+11.8 Role assignment and audit 
+43. Administrator opens a user and selects a role, scope and optional start/expiry dates. 
+44. API verifies the administrator can delegate every permission included in the role and that the scope is within their authority. 
+45. Assignment is written transactionally with an audit event. 
+46. Authorization version/cache is invalidated; access changes apply promptly. 
+47. Revocation ends the assignment and may revoke sessions for high-risk privilege removal. 
+48. Audit viewers can filter and export only within their audit permissions; audit rows are not editable. 
+12. Non-functional requirements 
+ID Requirement 
+NFR-SEC-01 Use a deny-by-default authorization model; backend is authoritative. 
+NFR-SEC-02 Use Argon2id or bcrypt with approved work factor if password authentication is 
+used; do not store plaintext passwords. 
+NFR-SEC-03 Prefer secure, HTTP-only, SameSite cookies for browser refresh tokens; rotate 
+refresh tokens and detect reuse. 
+NFR-SEC-04 Apply rate limits to login, recovery, role changes and export endpoints.  
+NFR-SEC-05 Validate UUIDs and request bodies; use parameterized SQL or a trusted 
+ORM/query builder. 
+NFR-SEC-06 Never trust organization_id/facility_id supplied by the browser without validating 
+against authenticated scope. 
+NFR-SEC-07 Do not log passwords, raw tokens, full clinical note bodies or unnecessary 
+personal health data. 
+NFR-SEC-08 Sensitive clinical, billing and security actions shall be auditable.  
+NFR-DATA-01 Every tenant-owned record and query must enforce organization scope; facility -
+level scope is enforced where applicable. 
+NFR-DATA-02 Use database constraints, foreign keys, uniqueness rules and transactions to 
+protect integrity. 
+NFR-AVAIL-01 External maps/email failures must not crash unrelated clinical or administrative 
+workflows. 
+NFR-UX-01 All screens must expose loading, empty, success, validation, forbidden and 
+retryable error states. 
+NFR-UX-02 Map discovery must provide a manual location fallback and be usable when 
+geolocation permission is denied. 
+NFR-OBS-01 Use structured logs, correlation/request IDs and operational alerts without 
+exposing sensitive content. 
+NFR-TEST-01 Automated tests must cover allow/deny, scope, expiry, cross -tenant access, 
+CRUD validation and major state transitions. 
+NFR-COMP-01 Applicable healthcare privacy, retention, consent and breach -notification 
+obligations must be identified before production; no compliance certification is 
+implied by this document. 
+ 
+Performance, availability, recovery-point/recovery-time, data retention periods, supported browsers, localization, accessibility 
+conformance and expected concurrent-user volume are OPEN DECISIONS because the source document does not provide 
+measurable targets. 
+13. Error handling requirements 
+Code / HTTP When used UI behavior 
+400 VALIDATION_ERROR Malformed input or business validation failure Show field-level errors and preserve safe entered 
+values. 
+401 UNAUTHENTICATED Missing/invalid/expired session Prompt sign-in or refresh session safely; do not retry 
+infinitely. 
+403 FORBIDDEN Authenticated user lacks permission/scope Show access-denied message; do not reveal 
+protected resource details. 
+404 NOT_FOUND Resource does not exist or should not be disclosed Show not found; use consistent response strategy to 
+limit ID enumeration. 
+409 CONFLICT Duplicate, concurrent update, slot conflict or invalid 
+state transition 
+Explain conflict and offer refresh/reselect when 
+appropriate. 
+422 BUSINESS_RULE_VIOLATION Valid structure but prohibited business state Show actionable business rule message. 
+429 RATE_LIMITED Request threshold exceeded Show retry guidance; honor Retry-After when 
+provided. 
+502/503 INTEGRATION_UNAVAILABLE Maps/email provider unavailable or disabled Show fallback; preserve primary workflow; do not 
+expose keys/provider secrets. 
+500 INTERNAL_ERROR Unexpected server error Show generic message and correlation ID; log 
+sanitized diagnostic details. 
+ 
+
+=== PAGE 13 ===
+PATIENTPATHLY WEB  |  COMBINED SRS + SDD 
+Draft baseline • Confirm open decisions before implementation • Page 13 
+All API errors should use a stable envelope, for example: {"error":{"code":"VALIDATION_ERROR","message":"Please correct the 
+highlighted fields.","requestId":"...","fields":{"email":"Invalid email format"}}}. Do not return stack traces or sensitive policy details in 
+production. 
+14. Acceptance criteria 
+ID Given / When / Then acceptance criterion 
+AC-01 Given an inactive user or organization, when sign -in or a protected API is 
+attempted, then access is denied. 
+AC-02 Given a user without patient.read, when they call the patient API directly, then the 
+API returns 403 even if the frontend route is manually opened.  
+AC-03 Given an administrator in Organization A, when they request a 
+branch/patient/appointment from Organization B, then no cross -tenant data is 
+returned or changed. 
+AC-04 Given a facility-scoped user, when they query another facility without permission, 
+then results are excluded or access is denied according to the API contract.  
+AC-05 Given a role assignment expires, when authorization is evaluated after expiry, 
+then the expired permissions no longer grant access.  
+AC-06 Given an explicit deny for a permission, when another role grants the same 
+permission, then deny wins. 
+AC-07 Given a signed clinical note, when a user tries to edit it through the ordinary 
+update endpoint, then the system rejects the edit and requires the approved 
+amendment path. 
+AC-08 Given a patient denies geolocation, when they use discovery, then manual 
+location search remains available. 
+AC-09 Given a maps-provider outage, when discovery is used, then the UI shows a clear 
+error/fallback and no provider secret is exposed. 
+AC-10 Given a role/permission mapping change, when the transaction commits, then an 
+audit event exists and stale authorization cache is invalidated.  
+AC-11 Given an issued invoice or posted payment, when a user attempts silent 
+overwrite/deletion, then the operation is rejected and the approved 
+correction/reversal workflow is required. 
+AC-12 Given a user reads or exports a sensitive record, when policy requires auditing, 
+then an audit event records actor, organization, action, resource identifier and 
+timestamp without storing the clinical content. 
+AC-13 Given an unauthorized user requests another user's notifications, then the API 
+returns no other user's notification data. 
+AC-14 Given a valid patient/appointment creation request, when a referenced branch is 
+outside the authenticated organization, then the API rejects the request.  
+AC-15 Given an email provider failure, when an unrelated patient or clinical workflow is 
+used, then the primary workflow remains available and the delivery failure is 
+recorded safely. 
+ 
+  
+
+=== PAGE 14 ===
+PATIENTPATHLY WEB  |  COMBINED SRS + SDD 
+Draft baseline • Confirm open decisions before implementation • Page 14 
+Part B — Software Design Description (SDD) 
+15. Architecture overview 
+SOURCE BASELINE stack: React frontend, Node.js/Express API and PostgreSQL. The source document recommends centralized 
+authentication/authorization middleware, application services, scoped repositories and audit logging. The proposed 
+implementation is a modular monolith initially, with clear module boundaries so services can be separated later if operational scale 
+requires it. 
+Browser (React) 
+  -> API client / route guards / permission-aware UI 
+  -> HTTPS API (Node.js + Express) 
+       -> authentication/session middleware 
+       -> organization context + authorization policy service 
+       -> request validation 
+       -> module controllers 
+       -> application services / business rules 
+       -> tenant- and facility-scoped repositories 
+       -> PostgreSQL (business data + RBAC + audit) 
+       -> Maps provider (facility discovery only) 
+       -> Email provider/SMTP (approved account/workflow messages) 
+16. Module boundaries 
+Module Responsibilities Must not own 
+Auth Credential verification, sessions, refresh/revocation, 
+recovery, current-user context 
+Business permissions duplicated across individual 
+controllers 
+Organizations Organizations, facilities/branches, departments, 
+timezone and public listing settings 
+Patient clinical data 
+RBAC Permission catalog, roles, assignments, policy 
+resolution, cache versioning, audit of access 
+changes 
+UI-only enforcement 
+Patients Patient profile CRUD, duplicate checks, archive 
+state, authorized chart entry point 
+Clinical note lifecycle and invoice posting rules 
+Appointments Appointment creation, list/search, state transitions, 
+schedule conflict validation 
+Direct mutation of clinical notes 
+Clinical Encounters, notes, diagnoses and prescriptions with 
+signed/amendment lifecycle 
+Laboratory verification and billing ledger 
+Laboratory Lab orders, status, results and verification if 
+approved 
+External lab transmission in this baseline 
+Billing Invoices, line items, payment ledger, balance 
+calculations and financial reports 
+Online gateway processing in this baseline 
+Discovery Public facility search, geospatial filtering, map -
+provider adapter, public listing DTOs 
+Patient coordinates, chart data or staff live tracking  
+Reports Permission-aware aggregate queries and export 
+orchestration 
+Bypassing module scopes 
+Notifications In-app inbox, email templates, delivery queue/retries 
+and read state 
+Embedding sensitive clinical content in email by 
+default 
+Audit Append-only security and sensitive business event 
+recording/querying 
+General-purpose update/delete of audit rows 
+ 
+Mandatory module coverage update: the architecture and implementation plan must include OPD, appointments, inpatient, ER, LIS, 
+radiology/imaging, pharmacy, billing/payments, inventory, patient portal/mobile, HR/staff, reports/analytics, security/compliance, 
+multi-branch administration and telemedicine. Existing module boundaries, role/permission matrix, database design, APIs, screen 
+inventory, workflows, tests and phased plan must be extended for these modules before implementation is considered complete. 
+17. Proposed frontend architecture 
+• Use React route-level modules matching the domains above, with shared layout, navigation, form controls, tables, filters, 
+dialogs and notification components. 
+• Use a centralized API client that attaches the authenticated session, normalizes errors, handles 401/403 responses and adds a 
+request/correlation identifier where supported. 
+• Load current-user authorization from GET /api/v1/me/authorization. Expose can(permission, resourceContext?) and route 
+guards; do not hardcode role names throughout components. 
+
+=== PAGE 15 ===
+PATIENTPATHLY WEB  |  COMBINED SRS + SDD 
+Draft baseline • Confirm open decisions before implementation • Page 15 
+• Create reusable list/detail/form patterns: loading skeleton, empty state, filter controls, pagination, form validation, 
+confirmation dialog, toast/inline feedback and permission-aware actions. 
+• Treat the browser's organization/facility selector as a requested context only; the API validates the user's assignment before 
+applying it. 
+• Discovery UI uses a Maps adapter and a facility-list fallback. Request browser location only after explicit user interaction. 
+• Sensitive values should not be cached in persistent browser storage unless specifically reviewed; avoid storing refresh tokens 
+in JavaScript-accessible storage. 
+18. Proposed backend request pipeline 
+Request -> request ID + security headers -> rate limit -> authenticate/session validation -> resolve 
+organization context -> authorize permission and resource scope -> validate params/body -> controller -> 
+service/business rules -> scoped repository -> transaction -> audit event -> response DTO 
+The uploaded architecture gives the following conceptual pipeline: route -> authenticate() -> requirePermission("resource.action") -
+> validateRequest() -> controller -> service -> scoped repository -> auditSensitiveAction() -> response. The ordering above is a 
+proposed implementation detail; the final ordering must ensure validation, authorization, error handling and audit coverage without 
+leaking resource existence. 
+19. Authorization model and permission taxonomy 
+Permission code format: module.action, with optional scope suffix only when the scope materially changes the permission 
+meaning. UI navigation and buttons ask whether a permission is available; they should not embed role-specific business logic. 
+Explicit deny wins over allow. 
+Module Suggested permission codes 
+Auth auth.session.create, auth.session.revoke, auth.password.reset  
+Organization organization.read, organization.manage 
+Facility facility.read, facility.manage, facility.public.read  
+Department department.read, department.manage 
+User user.read, user.create, user.update, user.deactivate, user.self.read, 
+user.self.update 
+RBAC rbac.role.read, rbac.role.create, rbac.role.update, rbac.role.delete, 
+rbac.role.assign_permissions, rbac.user.assign_role, rbac.user.revoke_role  
+Patient patient.create, patient.read, patient.update, patient.archive, patient.export  
+Appointment appointment.create, appointment.read, appointment.reschedule, 
+appointment.cancel, appointment.check_in 
+Clinical note clinical_note.create, clinical_note.read, clinical_note.sign, clinical_note.amend  
+Diagnosis diagnosis.manage, diagnosis.read 
+Prescription prescription.create, prescription.read, prescription.cancel  
+Laboratory lab_order.create, lab_order.read, lab_result.enter, lab_result.verify  
+Billing invoice.create, invoice.read, invoice.update_draft, invoice.issue, invoice.void, 
+payment.record, refund.approve, billing.report.read  
+Reports report.read, report.export 
+Notifications notification.read, notification.mark_read 
+Audit audit.security.read, audit.clinical.read, audit.export  
+ 
+20. Proposed role-permission matrix 
+This is a starting policy proposal, not a final authorization grant. Scope and contextual rules still apply, and organization 
+administrators must not automatically receive clinical access. 
+Role Patients Appointments Clinical Lab Billing Org/RBAC Audit/reports 
+Platform 
+Super 
+Admin 
+No routine 
+clinical access 
+No routine clinical access No routine clinical 
+access 
+No 
+routine 
+clinical 
+access 
+Platform-level 
+only if approved 
+Platform 
+organizations/configuratio
+n; tightly controlled 
+Platform 
+security audit 
+Organizati
+on 
+Administr
+ator 
+Operational 
+access only if 
+explicitly 
+granted 
+Operational access No clinical access 
+by role alone 
+No lab 
+access 
+by role 
+alone 
+Configuration/r
+eport access if 
+granted 
+Organization 
+branches/departments/us
+ers/roles within tenant 
+Organization 
+audit/report 
+scope 
+Doctor Read assigned 
+patients; 
+limited profile 
+updates if 
+granted 
+Assigned appointments; 
+create/reschedule if policy 
+allows 
+Create/read/sign/a
+mend own or 
+assigned-scope 
+records 
+Order/re
+ad lab 
+as 
+permitte
+d 
+No financial 
+administration 
+by default 
+No admin by default Clinical audit 
+not 
+automatically 
+granted 
+Nurse Read assigned Read assigned appointments Vitals/nursing Read/or None by default None by default None by default 
+
+=== PAGE 16 ===
+PATIENTPATHLY WEB  |  COMBINED SRS + SDD 
+Draft baseline • Confirm open decisions before implementation • Page 16 
+patients notes; no 
+prescription/signin
+g unless separately 
+granted 
+der only 
+if 
+granted 
+Reception
+ist 
+Create/read/up
+date 
+demographics 
+in assigned 
+branch 
+Create/read/reschedule/canc
+el/check-in within branch 
+No clinical note 
+access by default 
+No 
+results 
+by 
+default 
+No billing 
+unless 
+separately 
+granted 
+None by default Operational 
+metrics if 
+granted 
+Lab 
+Technicia
+n 
+Minimum 
+patient identity 
+needed for lab 
+work 
+Read linked appointment 
+context if needed 
+No general clinical 
+note editing 
+Read 
+orders, 
+enter 
+results; 
+verify 
+only if 
+separat
+ely 
+granted 
+None by default None by default Lab reports if 
+granted 
+Billing 
+Officer 
+Minimum 
+demographics 
+required for 
+billing 
+Read limited appointment 
+context if needed 
+No clinical record 
+access by default 
+No lab 
+result 
+access 
+by 
+default 
+Invoices, 
+record 
+payments, 
+approved 
+reports 
+None by default Financial 
+reports within 
+scope 
+Auditor / 
+Complian
+ce 
+No default 
+direct clinical 
+access 
+No operational mutation Only approved 
+audit view, not 
+routine chart 
+access 
+Only 
+approve
+d audit 
+view 
+Read-only 
+audit/financial 
+scope if 
+approved 
+No mutation Read approved 
+audit 
+logs/reports 
+Patient Own profile 
+only 
+Own appointments only if 
+portal enabled 
+No portal clinical 
+access until 
+approved 
+No 
+portal 
+result 
+access 
+until 
+approve
+d 
+Own invoice 
+visibility if 
+approved 
+None Own 
+notification/acc
+ount history 
+only 
+ 
+For every role, the effective result is the intersection of role permissions, active assignment scope, resource ownership/relationship 
+rules, organization/facility status and contextual policy. This matrix must be approved and converted into executable authorization 
+tests before production. 
+21. Database design 
+21.1 Core tables from the source baseline 
+Table Purpose and key fields/constraints 
+organizations id PK; name; status; timezone; created_at. Tenant boundary.  
+users id PK; organization_id FK; email; status; password_hash if password auth. Unique 
+lower(email) per tenant; indexes on organization/status.  
+roles id PK; organization_id nullable for global/system role; code; name; is_system. 
+Unique (organization_id, code); system roles protected.  
+permissions id PK; code UNIQUE; module; action; description. Seeded and version -
+controlled. 
+user_roles id PK; user_id FK; role_id FK; scope_type; scope_id; starts_at; expires_at; 
+assigned_by; created_at. Index user, role and scope.  
+role_permissions role_id FK; permission_id FK; effect allow/deny; conditions JSONB; composite PK 
+(role_id, permission_id). 
+sessions id PK; user_id FK; refresh_hash; expires_at; revoked_at. Store token hashes only; 
+index expiry/revocation. 
+audit_logs id PK; actor_user_id; action; resource; metadata JSONB; timestamp; append -
+only application behavior. Index actor/action/resource/time.  
+ 
+21.2 Proposed business tables 
+Table Proposed fields / rules 
+facilities id; organization_id FK; name; address fields; public phone/email; timezone; 
+latitude/longitude nullable; public_listing_status; status; created_at/updated_at. 
+Coordinates validated and listing state restricted.  
+departments id; organization_id FK; facility_id nullable FK if org -wide departments are 
+supported; name; code; status. 
+user_facility_assignments Optional join table if user_roles scope alone cannot express multiple facility 
+assignments cleanly; user_id; facility_id; starts_at; expires_at; assigned_by.  
+patients id; organization_id FK; primary_facility_id FK nullable; created_by; 
+demographics/contact fields; approved identifiers; status; timestamps. Sensitive 
+
+=== PAGE 17 ===
+PATIENTPATHLY WEB  |  COMBINED SRS + SDD 
+Draft baseline • Confirm open decisions before implementation • Page 17 
+fields separated/permission-filtered where warranted. 
+appointments id; organization_id; facility_id; patient_id; doctor_user_id nullable; department_id 
+nullable; starts_at; ends_at; status; reason/category; created_by; timestamps; 
+version. 
+clinical_encounters id; organization_id; facility_id; patient_id; appointment_id nullable; 
+primary_clinician_id; status; timestamps. 
+clinical_notes id; organization_id; patient_id; encounter_id; author_user_id; content; status 
+draft/signed/amended; signed_at; version; amended_from_id nullable; 
+created_at. 
+diagnoses id; organization_id; patient_id; encounter_id; code/text; status; entered_by; 
+timestamps. 
+prescriptions id; organization_id; patient_id; encounter_id; prescriber_id; 
+medication/instructions fields; status; timestamps. Dispensing tables excluded.  
+lab_orders id; organization_id; facility_id; patient_id; ordered_by; encounter_id nullable; 
+test/catalog fields; priority; status; timestamps. 
+lab_results id; organization_id; lab_order_id; result payload/structured values; units; 
+entered_by; verified_by nullable; verified_at nullable; version; timestamps.  
+invoices id; organization_id; facility_id; patient_id; invoice_number; currency; status; 
+subtotal/tax/total; due_at; created_by; issued_at; timestamps.  
+invoice_items id; invoice_id; description/code; quantity; unit_price; tax; line_total.  
+payments id; organization_id; invoice_id; amount; currency; method; external_reference 
+nullable; status; received_at; recorded_by; reversed_by nullable; timestamps. No 
+online gateway implied. 
+notifications id; organization_id nullable; recipient_user_id; type; template_key; safe_payload 
+JSONB; read_at; created_at; delivery status if email -bound. 
+email_outbox id; recipient; template_key; safe payload/reference; status; attempts; 
+next_attempt_at; sent_at; provider_message_id; last_error_code sanitized.  
+audit_logs Source baseline table; extend with organization_id, target_user_id, request_id, 
+ip/user_agent where approved, created_at. Avoid sensitive bodies.  
+ 
+Database design note: the uploaded document's core tables do not include the complete business schema for all selected 
+modules. The business tables above are proposed additions needed to support the user-confirmed target scope; they are not 
+claimed to exist in the current database. 
+21.3 Integrity, indexes and transactions 
+• Use UUID primary keys consistently if following the source SQL example. 
+• Use foreign keys and organization-aware constraints where feasible; validate that all referenced entities belong to the same 
+organization in service logic and, for high-risk relationships, through composite constraints. 
+• Unique lower(email) within organization for staff accounts, as stated in the source baseline. Patient identity uniqueness rules 
+remain open because duplicate patients may not share email/phone. 
+• Indexes should support common filters: organization_id + status; facility_id + appointment start time; patient_id + created_at; 
+appointment status/time; invoice patient/status/date; lab status/date; notification recipient/read/created_at; audit 
+timestamp/actor/action. 
+• Use transactions for role mapping replacement, role assignment/revocation, invoice issuance, payment recording/reversal, 
+clinical signing/amendment and lab verification. 
+• Never calculate financial balance from a client-submitted total; derive from persisted invoice items and posted 
+payment/reversal ledger rows. 
+• Use optimistic concurrency/version fields for high-conflict updates where needed. 
+• Define retention, backup, restore and archival policies before production. 
+22. API contract baseline 
+Base path: /api/v1. All protected endpoints require a valid session and explicit permission checks. Request and response examples 
+below are illustrative contract shapes, not existing endpoints. Use consistent pagination and error envelopes. Do not trust 
+organization_id from request bodies; derive it from authenticated context. 
+Method / endpoint Permission Purpose / important behavior 
+POST /auth/login Public + rate-limited Authenticate and establish session; generic failure 
+response. 
+POST /auth/logout auth.session.revoke Revoke current session/refresh token. 
+POST /auth/password/forgot Public + rate-limited Queue generic password recovery email. 
+POST /auth/password/reset Valid single-use reset token Set new password and invalidate applicable 
+sessions. 
+GET /me/authorization Authenticated Return user, organization, role assignments, 
+effective permissions and scopes. 
+GET/POST /organizations organization.read / organization.manage Platform-scoped organization listing/create. 
+
+=== PAGE 18 ===
+PATIENTPATHLY WEB  |  COMBINED SRS + SDD 
+Draft baseline • Confirm open decisions before implementation • Page 18 
+GET/PATCH /organizations/:id organization.read / organization.manage Read/update permitted organization fields. 
+GET/POST /facilities facility.read / facility.manage List/create branches within authorized 
+tenant/platform scope. 
+GET/PATCH /facilities/:id facility.read / facility.manage Read/update facility; validate tenant and public 
+listing policy. 
+GET/POST /departments department.read / department.manage List/create departments in authorized scope. 
+GET /patients patient.read Search with pagination and permitted branch scope. 
+POST /patients patient.create Create patient; tenant context server-derived. 
+GET/PATCH /patients/:id patient.read / patient.update Read/update permitted fields only. 
+POST /patients/:id/archive patient.archive Archive patient without breaking references. 
+GET/POST /appointments appointment.read / appointment.create List/create with scope, time and relationship 
+validation. 
+GET/PATCH /appointments/:id appointment.read / specific update permission Read permitted details; only allow state/field 
+changes valid for current state. 
+POST /appointments/:id/reschedule appointment.reschedule Validate new time and conflicts; audit transition. 
+POST /appointments/:id/cancel appointment.cancel Cancel with reason and approved policy. 
+POST /appointments/:id/check-in appointment.check_in Check in at assigned facility. 
+GET /patients/:id/chart patient.read + module-specific permissions Return only sections the actor may view; avoid one 
+broad unrestricted chart DTO. 
+POST /clinical-notes clinical_note.create Create draft note. 
+POST /clinical-notes/:id/sign clinical_note.sign Sign/finalize note; immutable signed version. 
+POST /clinical-notes/:id/amendments clinical_note.amend Create traceable amendment to signed note. 
+POST/GET /lab-orders lab_order.create / lab_order.read Create/list lab orders within scope. 
+POST /lab-orders/:id/results lab_result.enter Enter result with author and validation. 
+POST /lab-results/:id/verify lab_result.verify Verify result if enabled. 
+GET/POST /invoices invoice.read / invoice.create List/create invoices. 
+PATCH /invoices/:id invoice.update_draft Only draft fields may be updated. 
+POST /invoices/:id/issue invoice.issue Issue invoice and freeze issued fields. 
+POST /invoices/:id/payments payment.record Record manual payment; validate amount and 
+currency. 
+POST /payments/:id/reversals refund.approve or payment.reverse Reverse/adjust posted payment under approved 
+policy. 
+GET /discovery/facilities Public listing policy Search public facilities by query/area/lat/lng/radius; 
+return only public DTO fields. 
+GET /discovery/facilities/:id Public listing policy Return public-approved facility details. 
+GET /reports/:reportType report.read or module-specific permission Run scoped report; validate allowed filters. 
+POST /reports/:reportType/export report.export Generate authorized export and audit it. 
+GET /notifications notification.read Return current recipient's notifications only. 
+PATCH /notifications/:id/read notification.mark_read Mark owned notification read. 
+GET /roles rbac.role.read List roles visible in current organization. 
+POST /roles rbac.role.create Create custom role; validate code uniqueness and 
+delegability. 
+PUT /roles/:id/permissions rbac.role.assign_permissions Replace mapping transactionally; audit and 
+invalidate cache. 
+POST /users/:id/roles rbac.user.assign_role Assign role with scope/expiry. 
+DELETE /users/:id/roles/:assignmentId rbac.user.revoke_role Revoke assignment; audit and invalidate cache. 
+GET /audit/security audit.security.read Filter security events by authorized scope. 
+GET /audit/clinical audit.clinical.read Read approved clinical audit metadata only. 
+ 
+23. API conventions and validation 
+• Use JSON request/response bodies and ISO 8601 timestamps. Store timestamps as timestamptz and render in the facility/user 
+timezone as appropriate. 
+• Use cursor or page-based pagination with bounded page size; return total counts only when necessary and safe. 
+• Use DTOs/allowlists per operation so clients cannot mass-assign organization_id, created_by, signed_at, role flags or audit 
+fields. 
+• Use PATCH for partial updates and POST action endpoints for state transitions such as sign, verify, cancel, issue and reverse. 
+• Return 401 for missing/invalid authentication, 403 for authenticated but unauthorized requests, 404 for missing or deliberately 
+undisclosed resources, 409 for conflicts, 422 for business rule violations and 429 for rate limits. 
+• Validate input with a schema library; normalize email/phone/address as appropriate; reject unknown fields on sensitive 
+endpoints. 
+• All list endpoints must apply tenant and facility scopes before pagination and aggregation, not filter only after results are 
+fetched. 
+• API versioning and deprecation policy should be documented before public integrations are released. 
+
+=== PAGE 19 ===
+PATIENTPATHLY WEB  |  COMBINED SRS + SDD 
+Draft baseline • Confirm open decisions before implementation • Page 19 
+24. Third-party integration design 
+24.1 Maps / Places / browser geolocation 
+Concern Design requirement 
+Use case Patient discovery of public-approved facilities; no patient/staff live tracking.  
+Data sent Search query or user-consented coordinates; no clinical notes, diagnoses, 
+prescriptions or patient identity. 
+Provider boundary Wrap provider-specific SDK/API behind a DiscoveryMapsAdapter so the 
+application can test and replace it. 
+Keys Use restricted browser key only for approved browser APIs; keep server keys 
+secret in environment/secret manager; restrict by API, origin/IP and quota as 
+appropriate. 
+Failure Geolocation denied, timeout, no results, quota exceeded, provider outage and 
+invalid coordinates all have explicit UI states. 
+Cost Monitor usage and quotas; avoid unnecessary map initialization and duplicate 
+geocoding; confirm billing and enabled APIs before deployment.  
+Data quality Store facility coordinates only after validation; do not assume every address 
+geocodes accurately. 
+Privacy Explain location use; request permission only after user action; provide manual 
+search; do not persist the patient's current coordinates unless separately 
+approved. 
+ 
+24.2 Email provider / SMTP 
+Concern Design requirement 
+Use cases Password recovery/verification if enabled, plus only approved 
+appointment/account notifications. 
+Secrets Store SMTP/API credentials in server-side environment/secret manager; never 
+expose to frontend. 
+Delivery Use an outbox/queue pattern where feasible; bounded retries with backoff; track 
+status and sanitized provider error codes. 
+Templates Versioned templates; escape user-supplied content; avoid detailed clinical 
+information in email by default. 
+Idempotency Prevent duplicate messages for repeated event processing using an 
+event/delivery key. 
+Failure A mail outage must not roll back an otherwise valid patient/clinical transaction 
+unless the business rule explicitly requires delivery.  
+Operations Configure sender identity, SPF/DKIM/DMARC where supported, bounce handling 
+and monitoring before production. 
+ 
+Maps and email provider names, exact API products, pricing, quota settings, data processing terms and retention are not specified 
+in the source document and remain deployment decisions. 
+25. Security, privacy and audit design 
+• Authentication proves identity; authorization determines what the identity may do. Never infer permission solely from a 
+frontend role label. 
+• Derive organization context from the authenticated session and validate requested branch/facility context against active 
+assignments. 
+• Use deny-by-default; explicit deny overrides allow; check assignment expiry, user/org status, resource scope and contextual 
+policy. 
+• Protect against IDOR and cross-tenant access by scoping every repository query and verifying ownership of nested resources. 
+• Use secure session handling, refresh rotation/reuse detection, rate limits and revocation. Apply stronger authentication to 
+privileged roles as a future/approval decision. 
+• Audit role changes, permission changes, assignment/revocation, denied high-risk actions, sensitive clinical access, note 
+signing/amendment, lab verification, invoice issue/void, payment reversal and exports. 
+• Audit events should include actor, organization, action, resource identifier, timestamp and request ID; IP/user agent may be 
+included subject to privacy policy. Do not include passwords, tokens or full clinical content. 
+• Keep audit rows append-only at application level; restrict access to audit viewing/export and define retention. 
+• Use encryption in transit and encrypted backups/storage according to deployment controls; manage secrets outside source 
+control. 
+• Define least-privilege database credentials, migrations, backup/restore drills, vulnerability updates and incident response. 
+
+=== PAGE 20 ===
+PATIENTPATHLY WEB  |  COMBINED SRS + SDD 
+Draft baseline • Confirm open decisions before implementation • Page 20 
+• Before production, identify applicable healthcare privacy/consent/retention obligations in the operating jurisdiction and obtain 
+qualified review. 
+26. Testing strategy 
+Level Required tests 
+Unit Permission resolution; deny precedence; expiry; role scope; ownership; state 
+transitions; invoice totals/balance; validation; notification idempotency.  
+Integration RBAC middleware with PostgreSQL; scoped repositories; transactions; audit 
+creation; cache invalidation; email outbox retry behavior.  
+API contract 401 vs 403; 404 disclosure strategy; malformed UUID/body; duplicate records; 
+pagination; tenant and facility isolation; state -transition conflicts. 
+Frontend Route guards; permission-aware buttons; form validation; loading/empty/error 
+states; global 401/403 handling; map permission fallback; responsive screens.  
+Security IDOR; cross-tenant/facility access; privilege escalation; token replay/revocation; 
+mass assignment; injection; rate limits; export leakage.  
+Clinical safety Signed-note immutability; amendment history; separation of clinical 
+permissions; result verification workflow if enabled. 
+Billing Invoice totals; issue freeze; partial payments; overpayment policy; payment 
+reversal; duplicate submission/idempotency. 
+Integration resilience Maps provider unavailable/quota exhausted; geolocation denied/timed out; 
+email provider outage/retry/duplicate prevention.  
+UAT Each role performs allowed workflows and is blocked from prohibited workflows; 
+organization and branch administrators verify their expected scope.  
+Accessibility/compatibility Keyboard operation, labels and errors, contrast, zoom/responsive layout and 
+supported browser matrix once specified. 
+ 
+27. Deployment and configuration 
+• Separate development, test/staging and production environments with independent databases and provider keys. 
+• Use version-controlled, repeatable database migrations and idempotent seed data for system roles and permission catalog. 
+• Load secrets from environment/secret manager; validate required configuration at startup and fail safely when mandatory 
+secrets are absent. 
+• Configure HTTPS, secure cookie flags, CORS allowlist, content security policy and other security headers. 
+• Configure database backups, point-in-time recovery where available, restore drills, monitoring and alerting. 
+• Monitor API latency/error rates, auth failures, denied requests, email delivery failures, map-provider quota/cost, database 
+saturation and job retries. 
+• Run migrations in a controlled release step; ensure backward-compatible schema changes where deployments may overlap. 
+• Define rollback/forward-fix procedures, retention policies and an incident-response owner before production. 
+28. Phased implementation plan 
+Phase Work Exit criteria 
+0. Product decisions and UX mapping Resolve portal access, appointment 
+booking/approval, branch scope, clinical 
+fields/lifecycle, lab verification, billing payment 
+policy, public facility approval, notification triggers 
+and compliance jurisdiction. 
+Approved workflows, screen wireframes and 
+permission matrix. 
+1. Foundation and schema Organizations/facilities/departments; 
+users/sessions; roles/permissions/assignments; 
+audit table; migrations and seed data. 
+Schema review; repeatable migrations; constraints 
+and seeds tested. 
+2. Authentication and authorization Session lifecycle, current-user authorization 
+endpoint, policy service, scope resolution, deny 
+precedence, cache invalidation. 
+Unit tests pass; inactive/revoked accounts blocked.  
+3. Organization and patient CRUD Branch/department admin screens, staff/user 
+admin, patient list/detail/create/edit/archive, 
+scoped repositories. 
+CRUD acceptance tests pass; tenant isolation 
+verified. 
+4. Appointment workflows Calendar/list, create/reschedule/cancel/check-in, 
+state machine, schedule conflicts, approved 
+notifications. 
+Role-based UAT and conflict tests pass. 
+5. Clinical and laboratory Encounter/chart, draft/sign/amend notes, 
+diagnoses, prescriptions, lab orders/results and 
+optional verification. 
+Clinical permissions and immutable 
+amendment/audit tests pass. 
+6. Billing Invoice draft/issue, line items, manual payment 
+ledger, balances, corrections/reversals and financial 
+reports. 
+Arithmetic, transaction, access and audit tests pass.  
+7. Patient discovery and maps Public facility listing, location search, geolocation 
+consent, map/list results, manual fallback, provider 
+Discovery works without location permission and 
+fails safely during provider outage. 
+
+=== PAGE 21 ===
+PATIENTPATHLY WEB  |  COMBINED SRS + SDD 
+Draft baseline • Confirm open decisions before implementation • Page 21 
+quotas and failure states. 
+8. Reports and notifications Scoped dashboard/report queries, export 
+permission, in-app inbox, email 
+outbox/templates/retries. 
+Scope leakage, duplicate delivery and failure 
+recovery tests pass. 
+9. Hardening and release Security review, performance tests, accessibility, 
+monitoring, backups, restore test, privacy review and 
+operational runbooks. 
+Release checklist approved; no critical/high 
+unresolved security defects. 
+ 
+29. Traceability matrix 
+Requirement group Screens API/domain Data entities Key tests 
+Auth UI-01–03, UI-26 /auth/*, /me/authorization users, sessions, organizations Inactive user, token revoke, 
+reset expiry, rate limits 
+Organization/branch UI-16–18 /organizations, /facilities, 
+/departments 
+organizations, facilities, 
+departments 
+Cross-tenant reference 
+rejection; deactivation effects 
+Patients UI-08–10 /patients, /patients/:id/chart patients, users, audit_logs CRUD, duplicate review, field 
+permissions, scope 
+Appointments UI-11–12 /appointments/* appointments, patients, 
+facilities, users 
+Conflict, transition, branch 
+scope, cancellation 
+Clinical UI-10, UI-13 /clinical-notes, /diagnoses, 
+/prescriptions 
+clinical_encounters, 
+clinical_notes, diagnoses, 
+prescriptions 
+Sign freeze, amendment, role 
+separation 
+Laboratory UI-14 /lab-orders, /lab-results lab_orders, lab_results Entry vs verification, 
+correction history 
+Billing UI-15, UI-24 /invoices, /payments, /reports invoices, invoice_items, 
+payments 
+Totals, balance, issue freeze, 
+reversal 
+Discovery/maps UI-04–05 /discovery/facilities facilities Location denied, provider 
+outage, public DTO leakage 
+RBAC/audit UI-19–23 /roles, /users/:id/roles, 
+/audit/* 
+roles, permissions, 
+user_roles, role_permissions, 
+audit_logs 
+Deny precedence, delegation, 
+expiry, cache invalidation 
+Notifications UI-25 /notifications notifications, email_outbox Recipient isolation, retry, 
+duplicate prevention 
+Reports UI-07, UI-24 /reports/* domain entities and 
+audit_logs 
+Scope-safe aggregation and 
+export authorization 
+ 
+30. Definition of done 
+• Every protected endpoint declares the required permission and applies organization/facility/resource scope. 
+• All selected screens have documented controls, form fields, validation, success/error states and permission requirements. 
+• Role and permission changes are transactional, audited and invalidate cached authorization. 
+• System roles and permissions are seeded through version-controlled migrations. 
+• Clinical signing/amendment and financial posting/reversal preserve traceability. 
+• Maps and email integrations fail safely and do not leak credentials or protected data. 
+• Automated tests cover allow, deny, expiry, ownership, cross-tenant and cross-facility scenarios. 
+• No sensitive data is exposed in logs or generic error responses. 
+• Product decisions affecting portal access, appointment booking, branch sharing, clinical content and retention are approved. 
+• Security, backup/restore, monitoring and operational readiness reviews are completed before production. 
+Appendix A — Source alignment and change control 
+The uploaded architecture document explicitly defines the RBAC purpose/scope, React + Node.js/Express + PostgreSQL stack, core 
+RBAC tables, role examples, permission taxonomy, server-side enforcement pipeline, API examples, cache invalidation, audit 
+controls, security requirements, test strategy and implementation sequence. This combined document retains those principles. The 
+feature list supplied on 2026-10-29 adds 15 mandatory product feature areas. The image establishes the feature names and high-
+level capabilities, but does not fully define field-level rules, workflows, integrations or regulatory acceptance criteria for every area; 
+those are tracked as design decisions rather than invented requirements. 
+The uploaded source does not define a complete screen-by-screen product specification, final field lists for every business entity, 
+detailed clinical/billing state machines, exact Maps API products, email event triggers, performance SLOs or jurisdiction-specific 
+compliance rules. Those portions are identified as proposed or open rather than attributed to the source. 
+
+=== PAGE 22 ===
+PATIENTPATHLY WEB  |  COMBINED SRS + SDD 
+Draft baseline • Confirm open decisions before implementation • Page 22 
+Change control: product owner approves business rules and user-facing workflows; engineering approves architecture/API/schema 
+details; security/privacy reviewer approves sensitive-data and production controls. Each approved change should update 
+requirement IDs, API contracts, schema migrations, permission matrix and acceptance tests together. 
+Mandatory feature coverage review (2026-10-29): validate all 15 FR-01–FR-15 feature areas against the screen inventory, 
+role/permission matrix, workflows, database entities, API contracts, acceptance criteria and test cases. Resolve open decisions for 
+mobile-app delivery, payment/insurance integrations, payroll rules, radiology data/reporting, inpatient bed/room states, emergency 
+triage/alerts, pharmacy safety and stock controls, telemedicine provider/consent, and applicable compliance standards. 
+Appendix B — Decisions required before implementation of 
+affected workflows 
+Decision Why it matters Default safe stance until decided 
+Patient portal scope Determines patient-visible records and sensitive 
+data exposure. 
+Own profile and own appointment summary only; no 
+clinical note/lab result/prescription release. 
+Appointment booking Determines whether public/patient can create 
+bookings and how slots are confirmed. 
+No public booking action until direct-
+booking/request/approval policy is approved. 
+Branch access Determines clinician/staff visibility across facilities. Deny cross-facility access unless explicitly assigned 
+or granted by approved policy. 
+Clinical content Determines schema, required forms, signature and 
+amendment workflow. 
+Only approved fields; signed notes immutable; 
+sensitive reads audited. 
+Lab verification Determines whether result entry and release require 
+separate users. 
+Keep verification permission separate; do not mark 
+verified automatically. 
+Billing settlement Determines accepted methods, partial payment and 
+reversal rules. 
+Record only approved manual methods; no online 
+gateway. 
+Facility listing Determines which facilities appear publicly. Unpublished/inactive facilities hidden. 
+Email triggers Determines templates, patient consent and privacy 
+exposure. 
+Only essential account emails until workflow 
+notifications are approved. 
+Privacy jurisdiction/retention Determines legal retention, consent and data -
+subject processes. 
+Do not claim regulatory compliance; complete 
+legal/privacy review before production. 
+ 
+End of combined SRS + SDD. 
