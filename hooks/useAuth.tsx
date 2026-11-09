@@ -11,6 +11,7 @@ import {
   JSX,
 } from "react";
 import { useRouter } from "next/navigation";
+import { setTokenGetter } from "@/services/apiService";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface AuthUser {
@@ -96,6 +97,11 @@ function getInMemoryToken(): string | null {
 // ─── Auth Provider ────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: React.ReactNode }): JSX.Element {
   const auth = useAuthState();
+
+  useEffect(() => {
+    setTokenGetter(auth.getAccessToken);
+  }, [auth.getAccessToken]);
+
   return (
     <AuthContext.Provider value={auth}>
       {children}

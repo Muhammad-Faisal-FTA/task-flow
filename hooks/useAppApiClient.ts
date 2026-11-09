@@ -1,7 +1,7 @@
 // hooks/useAppApiClient.ts
 "use client";
 import { useState, useCallback, useEffect } from "react";
-import { taskApi, listApi, setTokenGetter } from "@/services/apiService";
+import { taskApi, listApi } from "@/services/apiService";
 import {
   cacheTasks,
   cacheLists,
@@ -84,10 +84,6 @@ function flattenGrouped(grouped: GroupedTasks): TaskDTO[] {
 export function useAppApiClient(
   getAccessToken: () => Promise<string | null> | string | null
 ) {
-  useEffect(() => {
-    setTokenGetter(getAccessToken);
-  }, [getAccessToken]);
-  
   const [isFromCache, setIsFromCache] = useState(false);
   const [screen, setScreen]               = useState<"home" | "detail" | "lists">("home");
   const [screenHistory, setScreenHistory] = useState<("home" | "detail" | "lists")[]>([]);
