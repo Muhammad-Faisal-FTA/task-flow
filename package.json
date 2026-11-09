@@ -6,10 +6,10 @@
     "admin"
   ],
   "scripts": {
-    "dev": "next dev --turbo",
-    "build": "next build --webpack",
+    "dev": "node init && next dev --turbo",
+    "build": "node init && next build --webpack",
     "generate-icons": "node scripts/generate-icons.mjs",
-    "start": "next start",
+    "start": "node init && next start",
     "test": "jest",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
